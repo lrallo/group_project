@@ -9,16 +9,7 @@ class TrainingBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100], // Sfondo leggermente grigio per far risaltare le card
-      appBar: AppBar(
-        title: const Text(
-          'PROFILO ALLENAMENTO',
-          style: TextStyle( color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18, ),
-        ),
-        backgroundColor: const Color(0xFF1B365D), // Blu scuro del design
-        centerTitle: true,
-        elevation: 0,
-      ),
-
+      
       body: SingleChildScrollView( //rende il suo child (Padding) scorrevole
         child: Padding(
           padding: const EdgeInsets.all(16.0), //lascia uno spazio di 16 in tutti i lati
