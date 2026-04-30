@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:gpx/gpx.dart';
 import 'dart:convert'; // Serve per trasformare i byte in testo (utf8)
 import 'package:flutter/foundation.dart' show kIsWeb; // Serve per verificare se siamo su web o su mobile, perché la gestione dei file è diversa
+import 'package:project_app/screens/trip_stages_screen.dart'; // Importiamo la schermata delle tappe per poterci navigare quando clicchiamo su un viaggio nella lista
 
 class Tripsbody extends StatefulWidget { // StatefulWidget perché dobbiamo gestire lo stato della selezione dell'attività (walk/bike) e abilitare/disabilitare il tasto di upload
   const Tripsbody({super.key});
@@ -44,50 +45,70 @@ class _TripsbodyState extends State<Tripsbody> {
                   
                   // --- TASTO CENTRALE: NEW TRIP ---
                   GestureDetector(
-                    // Se isReadyToUpload è false, onTap è null (disabilita il tap)
-                    onTap: isReadyToUpload //IF isReadyToUpload is true, then execute the function:
-                        ? () async {
-                            print("Apertura selettore file gpx per la modalità: $selectedActivity");
-                            
-                            FilePickerResult? result = await FilePicker.platform.pickFiles( //apre la finestra del pc per selezionare un file GPX e lo salva su result
-                              type: FileType.custom, // Diciamo al picker che vogliamo file specifici
-                              allowedExtensions: ['gpx'],
-                              withData: true, // Limitiamo la selezione ai file GPX
+                    onTap: () async { 
+                        // 1. GESTIONE DELL'ERRORE (Se non hai cliccato walk/bike)
+                        if (!isReadyToUpload) {    
+                            print("Tasto premuto, ma nessuna attività selezionata!");
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Seleziona prima un\'attività (walk o bike)!'),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                            return; // IMPORTANTE: Esce dalla funzione onTap, così non va avanti a caricare il file.
+                        }
+
+                        // se è stata selezionata un'attività, procedi con l'apertura del file picker:
+                        print("Apertura selettore file gpx per la modalità: $selectedActivity");
+                        
+                        FilePickerResult? result = await FilePicker.platform.pickFiles(  
+                          type: FileType.custom, 
+                          allowedExtensions: ['gpx'],
+                          withData: true, 
+                          allowMultiple: false, 
+                        );
+
+                        if (result != null) {      
+                          String fileName = result.files.single.name;
+                          print("File caricato con successo: $fileName");
+
+                          try {
+                            String contenutoXml = utf8.decode(result.files.single.bytes!); 
+                            Gpx gpxData = GpxReader().fromString(contenutoXml); 
+                      
+                            Trip newTrip = Trip(
+                              fileName,          
+                              selectedActivity!,
+                              gpxData,           
                             );
 
-                            if (result != null) {      // L'utente ha selezionato un file
-                              String fileName = result.files.single.name;
-                              print("File caricato con successo: $fileName");
+                            var dbProvider = Provider.of<DBtrips>(context, listen: false);
 
-                              try {
-                                String contenutoXml = utf8.decode(result.files.single.bytes!);
-                                Gpx gpxData = GpxReader().fromString(contenutoXml);
-                                String nuovoId = DateTime.now().millisecondsSinceEpoch.toString();
+                            await dbProvider.add(newTrip); // aggiunge il trip a DBtrips e divide automaticamente in tappe con trip_splitter.dart, creando i dayTrip e salvandoli nella variabile dayTrips del viaggio
 
-                                Trip newTrip = Trip(
-                                  nuovoId,
-                                  fileName,          
-                                  selectedActivity!,
-                                  gpxData,           
-                                );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Percorso caricato nella tua lista!'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                            print('Viaggio aggiunto correttamente!'); 
+                            print('Stato attuale del DB:\n${dbProvider.toString()}');
 
-                                Provider.of<DBtrips>(context, listen: false).addTrip(newTrip); 
+                          } catch (e) {
+                            print("Errore durante l'elaborazione del file: $e");
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Errore durante l\'elaborazione del file GPX.'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        } else { 
+                          print("Selezione file annullata dall'utente");
+                        }
+                    },
 
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Percorso caricato nella tua lista!')),
-                                );
-                                print('Viaggio aggiunto correttamente!'); 
-                                print('stato attuale del DB: ${DBtrips().toString().toString()}');
-
-                              } catch (e) {
-                                // Aggiunto un blocco try-catch per sicurezza, nel caso il file sia corrotto
-                                print("Errore durante la lettura del file: $e");
-                              }
-                            } else { //
-                              print("Selezione file annullata");
-                            }
-                          } 
-                        : null, //ELSE disabilita il tap
                     child: Opacity(
                       // Abbassiamo l'opacità se il tasto è disabilitato per dare feedback visivo
                       opacity: isReadyToUpload ? 1.0 : 0.4, 
@@ -192,20 +213,35 @@ class _TripsbodyState extends State<Tripsbody> {
 
               // 2. LISTA SCORREVOLE DEI VIAGGI
               // Usiamo Expanded per dire alla ListView di prendersi tutto lo spazio rimasto
-              Expanded(
-                child: ListView.builder(
-                  physics: const BouncingScrollPhysics(), // Effetto scorrimento morbido
-                  itemCount: 4, // Numero di viaggi finti (sostituisci con la lunghezza della tua lista reale)
-                  itemBuilder: (context, index) {
-                    // Qui chiameresti i dati dal tuo provider DBtrips
-                    // Esempio fittizio basato sull'immagine:
-                    if (index == 0) {
-                      return _buildTripCard("Giro delle Dolomiti", "150km | +3000m");
-                    }
-                    return _buildTripCard("Via Francigena", "220km | +4500m");
-                  },
-                ),
+              // 1. Accedi al provider DBtrips
+                       
+            Expanded( 
+              child: Consumer<DBtrips>(
+                builder: (context, dbTrips, child) {
+                  final tripsList = dbTrips.TripList;
+
+                  if (tripsList.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'Nessun viaggio caricato. Carica un file GPX per iniziare!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    );
+                  } else {
+                    return ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: tripsList.length,
+                      itemBuilder: (context, index) { //itero sulla lista dei viaggi caricati, per ogni viaggio creo una card con le informazioni principali (nome del file, distanza totale, dislivello totale) e un'iconina che rappresenta l'attività (walk o bike)
+                        Trip trip = tripsList[index];
+                        return _buildTripCard(context,  trip);
+                      },
+                    );
+                  }
+                },
+                
               ),
+            ),
           ],
         ),
       ),
@@ -213,57 +249,97 @@ class _TripsbodyState extends State<Tripsbody> {
   }
 
   // Metodo helper per creare le singole card dei viaggi
-  Widget _buildTripCard(String title, String subtitle) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
+  Widget _buildTripCard(BuildContext context, Trip trip) {
+    // Formattiamo il sottotitolo usando i dati calcolati
+    String formattedSubtitle = "${trip.distance.toStringAsFixed(0)}km | +${trip.elevationPos.toStringAsFixed(0)}m";
+    // Scegliamo un'iconina da mostrare al posto del paesaggio in base all'attività
+    IconData activityIcon = trip.activity == 'bike' ? Icons.directions_bike : Icons.directions_walk;
+
+    // formattazione DATA e ORA //
+    String day = trip.importDate.day.toString().padLeft(2, '0');
+    String month = trip.importDate.month.toString().padLeft(2, '0');
+    String year = trip.importDate.year.toString();
+    String hour = trip.importDate.hour.toString().padLeft(2, '0');
+    String minute = trip.importDate.minute.toString().padLeft(2, '0');
+    String displayDate = "$day/$month/$year - $hour:$minute";
+
+    return GestureDetector(
+      onTap: () {
+        // QUANDO CLICCHI LA CARD, NAVIGA ALLA SCHERMATA DELLE TAPPE (Telefono 3)
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TripStagesScreen(
+              indexTrips: Provider.of<DBtrips>(context, listen: false).TripList.indexOf(trip) // passiamo anche l'indice del viaggio selezionato, così nella schermata delle tappe possiamo accedere alla lista delle tappe di quel viaggio nel provider
+              
+              ), // 
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-          // Placeholder per l'immagine del paesaggio
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              width: 60,
-              height: 60,
-              color: Colors.grey[300],
-              child: const Icon(Icons.landscape, color: Colors.grey),
+        );
+      },
+
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 15),
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 3),
             ),
-          )
-        ],
+          ],
+        ),
+        child: Row( 
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded( // Usiamo Expanded per evitare overflow del testo se il nome è lungo
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    trip.title, // Usa il nome reale del file/viaggio
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    overflow: TextOverflow.ellipsis, // Se è troppo lungo mette "..."
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    formattedSubtitle, // Usa distanza e dislivello reali
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  // --- NUOVO TEXT WIDGET PER LA DATA ---
+                  Text(
+                    'Caricato il: $displayDate',
+                    style: TextStyle(
+                      fontSize: 11, // Molto piccolo per non disturbare
+                      color: Colors.grey[400], // Colore molto tenue per essere elegante
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: 60,
+                height: 60,
+                color: trip.activity == 'bike' ? const Color(0xFF4A7C59).withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+                child: Icon(activityIcon, color: trip.activity == 'bike' ? const Color(0xFF4A7C59) : Colors.orange),
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

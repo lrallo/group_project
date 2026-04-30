@@ -16,8 +16,8 @@ class _HomeScreenState extends State<HomePage> {
 
   // List of pages
   final List<Widget> pages = [
-    TrainingBody(),
     Tripsbody(),
+    TrainingBody(),
   ];
 
   @override
@@ -37,15 +37,16 @@ class _HomeScreenState extends State<HomePage> {
 
         destinations: [
           NavigationDestination(
-            icon: Icon(Icons.directions_run_outlined),
-            selectedIcon: Icon(Icons.directions_run),
-            label: "Training",
-          ),
-          NavigationDestination(
             icon: Icon(Icons.terrain_outlined),
             selectedIcon: Icon(Icons.terrain),
             label: "Trips",
           ),
+          NavigationDestination(
+            icon: Icon(Icons.directions_run_outlined),
+            selectedIcon: Icon(Icons.directions_run),
+            label: "Training",
+          ),
+          
         ],
       ),
 

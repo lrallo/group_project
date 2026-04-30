@@ -27,9 +27,9 @@ class MyApp extends StatelessWidget {
           builder: (context, snapshot) {
 
             if (snapshot.hasData) { //se sono stati caricati i dati
-              final sp = snapshot.data!; //accedo alla memoria
+              final sp = snapshot.data!; // accedo ai dati caricati
 
-              if (sp.getBool('isUserLogged') != null ) { //se è presente la chiave isUserLogged significa che l'utente ha già effettuato il login, mando direttamente nella homepage
+              if (sp.getBool('isUserLogged') != null ) { //se è presente la chiave isUserLogged significa che l'utente ha già effettuato il login, mando direttamente nella
                 return HomePage();
               } else { //se l'utente non ha già effettuato il login in precedenza
                 return LoginPage();
