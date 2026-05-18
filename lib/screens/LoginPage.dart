@@ -1,22 +1,36 @@
 import 'package:flutter/material.dart';
 import '/screens/HomePage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:project_app/services/impact_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert'; // libreria per jsdondecode
+import 'package:project_app/screens/onboarding.dart';
+
 
 class LoginPage extends StatelessWidget {
   LoginPage({Key? key}) : super(key: key);//costruttore
   // variabili
   static const routename = 'Login Page';
-  final TextEditingController passwordController=TextEditingController(); // istanzio una variabile di classe TextEditingController
-  final TextEditingController emailController=TextEditingController(); // final: è una variabile creata durante l'esecuzione dell'app
-  static const String correctEmail = 'admin';
-  static const String correctPassword = '1234'; 
+  
+  final TextEditingController userController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final ImpactService impact = ImpactService(); //instanzio Impact per poter usare i suoi metodi
+  
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       // Usiamo SingleChildScrollView per evitare errori quando appare la tastiera
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 50.0),
+        child: Padding(
+          padding: const EdgeInsets.only(
+            left: 24.0,
+            right: 24.0,
+            top: 50,
+            bottom: 20,
+          ),
+          
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -30,56 +44,78 @@ class LoginPage extends StatelessWidget {
               ),
               
               const SizedBox(height: 40),
-
+          
               // Campo Email
               TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
+                controller: userController,
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  labelText: 'Email',
-                  hintText: 'esempio@mail.it',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  labelText: 'Username',
+                  hintText: 'Enter your username',
                 ),
               ),
-              const SizedBox(height: 20),
 
+              const SizedBox(height: 20),
+          
               // Campo Password
               TextField(
                 controller: passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.lock_outline),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   labelText: 'Password',
                   hintText: 'Enter your password',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
-              
+          
               const SizedBox(height: 40),
-
+          
               // Bottone Login
               SizedBox(
                 width: double.infinity, // Prende tutta la larghezza
                 height: 55,
                 child: ElevatedButton(
+                  child: const Text('ACCEDI', style: TextStyle(fontSize: 16, color: Colors.white)),
+                  
+                  onPressed: () async {
+                    
+                    // check if credentials are correct
+                    final result = await impact.getAndStoreTokens(userController.text, passwordController.text);
+                    // If correct, store the username and password in SharedPreferences
+                    // and navigate to the Exposure screen (pushReplacement to remove the login screen from the stack)
+                    if (result == 200) {
+                      final sp = await SharedPreferences.getInstance();
+                      // SALVO LE CREDENZIALI DELL'UTENTE IN SHARED PREFERENCES 
+                      await sp.setString('username', userController.text); 
+                      await sp.setString('password', passwordController.text);
+
+                      final onboarding_completed = await sp.getBool('onboarding_completed');
+                      if(onboarding_completed == null || onboarding_completed == false){ // se l'onboarding non è mai stato fatto o non è stato completato
+                        Navigator.pushReplacement( context, MaterialPageRoute( builder: (context) => Onboarding(), ),);
+                      }else{ //l'onboarding era già stato completato
+                        Navigator.pushReplacement( context, MaterialPageRoute( builder: (context) => const HomePage(), ), );}
+
+                    } else {
+                      // If incorrect, show a SnackBar with an error message
+                      ScaffoldMessenger.of(context)
+                        ..removeCurrentSnackBar()
+                        ..showSnackBar(const SnackBar(
+                            backgroundColor: Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.all(8),
+                            duration: Duration(seconds: 2),
+                            content:Text("username or password incorrect")
+                            ));
+                    }
+                  },//onPressed
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('ACCEDI', style: TextStyle(fontSize: 16, color: Colors.white)),
-                  onPressed: () {
-                    if (emailController.text == correctEmail && passwordController.text == correctPassword) {
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>  HomePage()));  // creo la HomePage solo se sia psw che gmail sono giusto
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Credenziali errate! Riprova.'),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
-                    }
-                  },
+                  ),//style
                 ),
               ),
               
@@ -91,7 +127,10 @@ class LoginPage extends StatelessWidget {
             ],
           ),
         ),
+      
       ),
     );
   }
 }
+
+

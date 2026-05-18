@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '/providers/DBTrips_provider.dart';
+import 'package:project_app/providers/TripProvider.dart';
+import 'package:project_app/models/trip.dart';
 import 'package:dotted_border/dotted_border.dart'; //bordo tratteggiato per la card di upload del GPX
-import 'package:file_picker/file_picker.dart';
-import 'package:gpx/gpx.dart';
-import 'dart:convert'; // Serve per trasformare i byte in testo (utf8)
 import 'package:flutter/foundation.dart' show kIsWeb; // Serve per verificare se siamo su web o su mobile, perché la gestione dei file è diversa
 import 'package:project_app/screens/trip_stages_screen.dart'; // Importiamo la schermata delle tappe per poterci navigare quando clicchiamo su un viaggio nella lista
 
@@ -15,7 +13,7 @@ class Tripsbody extends StatefulWidget { // StatefulWidget perché dobbiamo gest
 }
 
 class _TripsbodyState extends State<Tripsbody> {
-  String? selectedActivity;
+  String? selectedActivity; //inizializzato come Null
 
   @override
   Widget build(BuildContext context) {
@@ -46,68 +44,49 @@ class _TripsbodyState extends State<Tripsbody> {
                   // --- TASTO CENTRALE: NEW TRIP ---
                   GestureDetector(
                     onTap: () async { 
-                        // 1. GESTIONE DELL'ERRORE (Se non hai cliccato walk/bike)
-                        if (!isReadyToUpload) {    
-                            print("Tasto premuto, ma nessuna attività selezionata!");
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Seleziona prima un\'attività (walk o bike)!'),
-                                backgroundColor: Colors.redAccent,
-                              ),
-                            );
-                            return; // IMPORTANTE: Esce dalla funzione onTap, così non va avanti a caricare il file.
-                        }
-
-                        // se è stata selezionata un'attività, procedi con l'apertura del file picker:
-                        print("Apertura selettore file gpx per la modalità: $selectedActivity");
+                        // SE  non è stata selezionata un'attività, mostro un messaggio di errore e non apro il file picker
+                        if (!isReadyToUpload) {
+                          print("Tasto premuto, ma nessuna attività selezionata!");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Seleziona prima un\'attività (walk o bike)!'),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                          return; // IMPORTANTE: Esce dalla funzione onTap, così non va avanti a caricare il file.
+                        }else{
+                          // SE è stata selezionata un'attività, procedo con l'apertura del file picker
+                          print("Apertura selettore file gpx per la modalità: $selectedActivity");
                         
-                        FilePickerResult? result = await FilePicker.platform.pickFiles(  
-                          type: FileType.custom, 
-                          allowedExtensions: ['gpx'],
-                          withData: true, 
-                          allowMultiple: false, 
-                        );
-
-                        if (result != null) {      
-                          String fileName = result.files.single.name;
-                          print("File caricato con successo: $fileName");
-
-                          try {
-                            String contenutoXml = utf8.decode(result.files.single.bytes!); 
-                            Gpx gpxData = GpxReader().fromString(contenutoXml); 
-                      
-                            Trip newTrip = Trip(
-                              fileName,          
-                              selectedActivity!,
-                              gpxData,           
-                            );
-
-                            var dbProvider = Provider.of<DBtrips>(context, listen: false);
-
-                            await dbProvider.add(newTrip); // aggiunge il trip a DBtrips e divide automaticamente in tappe con trip_splitter.dart, creando i dayTrip e salvandoli nella variabile dayTrips del viaggio
-
+                          // chiamo il metodo addTrip del provider, che si occuperà di aprire il file picker, leggere il file, creare l'oggetto Trip, calcolare le tappe e aggiungere tutto al DB (lista dei viaggi) del provider
+                          bool success = await Provider.of<TripProvider>(context, listen: false).addTrip(selectedActivity!); 
+                          
+                          if (success) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Percorso caricato nella tua lista!'),
                                 backgroundColor: Colors.green,
-                              ),
-                            );
-                            print('Viaggio aggiunto correttamente!'); 
-                            print('Stato attuale del DB:\n${dbProvider.toString()}');
-
-                          } catch (e) {
-                            print("Errore durante l'elaborazione del file: $e");
+                              ),);
+                          } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Errore durante l\'elaborazione del file GPX.'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+                                content: Text('Errore nel caricamento del percorso. Riprova!'),
+                                backgroundColor: Colors.redAccent,
+                              ),);
                           }
-                        } else { 
-                          print("Selezione file annullata dall'utente");
-                        }
-                    },
+
+                          print('Stato attuale del DB:\n${Provider.of<TripProvider>(context, listen: false).TripList.toString()}');
+                          
+                          // riaggiorno la variabile di stato isReadyToUpload, così se l'utente vuole caricare un altro file deve prima scegliere se è walk o bike
+                          isReadyToUpload = false;
+                          //riabilito il tasto di upload resettando la selezione dell'attività, così se l'utente vuole caricare un altro file deve prima scegliere se è walk o bike
+                          setState(() {
+                            selectedActivity = null;
+                          });
+
+                        } },
+                    
+                    
 
                     child: Opacity(
                       // Abbassiamo l'opacità se il tasto è disabilitato per dare feedback visivo
@@ -216,7 +195,7 @@ class _TripsbodyState extends State<Tripsbody> {
               // 1. Accedi al provider DBtrips
                        
             Expanded( 
-              child: Consumer<DBtrips>(
+              child: Consumer<TripProvider>(
                 builder: (context, dbTrips, child) {
                   final tripsList = dbTrips.TripList;
 
@@ -270,7 +249,7 @@ class _TripsbodyState extends State<Tripsbody> {
           context,
           MaterialPageRoute(
             builder: (context) => TripStagesScreen(
-              indexTrips: Provider.of<DBtrips>(context, listen: false).TripList.indexOf(trip) // passiamo anche l'indice del viaggio selezionato, così nella schermata delle tappe possiamo accedere alla lista delle tappe di quel viaggio nel provider
+              indexTrips: Provider.of<TripProvider>(context, listen: false).TripList.indexOf(trip) // passiamo anche l'indice del viaggio selezionato, così nella schermata delle tappe possiamo accedere alla lista delle tappe di quel viaggio nel provider
               
               ), // 
           ),

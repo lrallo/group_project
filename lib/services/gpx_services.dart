@@ -1,15 +1,46 @@
-import 'dart:io';
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
+import 'package:project_app/models/trip.dart';
 import 'package:gpx/gpx.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:project_app/providers/DBTrips_provider.dart';
-import 'dart:convert'; // Necessario per convertire la stringa in byte
-import 'package:flutter/foundation.dart' show kIsWeb; // Importa il "bivio" web/mobile
-
 import 'package:universal_html/html.dart' as html;
+import 'package:flutter/foundation.dart' show kIsWeb; 
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
+class GpxService{
 
-Future<void> exportStageGpx(dayTrip stage) async {
+  // --- IMPORT ---
+  static Future<Trip?> pickGpx(String selectedActivity) async{
+
+    // 1. salvo il file caricato nella variabile result
+    FilePickerResult? result = await FilePicker.platform.pickFiles( 
+          type: FileType.custom,
+          allowedExtensions: ['gpx'],
+          withData: true,
+          allowMultiple: false,
+        );
+    print('File picker chiuso, lettura del file in corso...');
+
+    if (result != null) { // se l'utente ha selezionato un file
+      String fileName = result.files.single.name;
+      try {
+        // 2. leggo il contenuto del file e lo converto in una stringa e poi in un oggetto Gpx
+        String contenutoXml = utf8.decode(result.files.single.bytes!); 
+        Gpx gpxData = GpxReader().fromString(contenutoXml); 
+        print('File GPX letto correttamente, creazione dell\'oggetto  Trip...');
+        return Trip(fileName, selectedActivity, gpxData);
+
+      } catch (e) {
+        print("Errore nella lettura del GPX: $e");
+        return null; // Gestione dell'errore (file corrotto, ecc.)
+      }
+    }
+    return null; // L'utente ha chiuso il picker senza scegliere file
+  } //pickGpx
+
+  // --- EXPORT ---
+  static Future<void> exportStageGpx(dayTrip stage) async {
   try {
     // 1. Converte l'oggetto GPX della tappa in una stringa formattata (XML)
     final gpxString = GpxWriter().asString(stage.gpxData, pretty: true); //asString prende l'istanza dell'oggetto gpx e lo trasforma in una stringa di testo in formato XML
@@ -62,7 +93,7 @@ Future<void> exportStageGpx(dayTrip stage) async {
   } catch (e) {
     print("Errore durante l'esportazione del file GPX: $e");
   }
-}
+} //exportStageGpx
 
 
 
@@ -72,7 +103,7 @@ Future<void> exportStageGpx(dayTrip stage) async {
 
 // funzione per esportare tutte le stages di un trip //
 
-Future<void> exportAllStagesGpx(List<dayTrip> stages, String tripTitle) async {
+static Future<void> exportAllStagesGpx(List<dayTrip> stages, String tripTitle) async {
   try {
     if (kIsWeb) {
       // ---------------------------------------------------------
@@ -128,3 +159,5 @@ Future<void> exportAllStagesGpx(List<dayTrip> stages, String tripTitle) async {
     print("Errore durante l'esportazione di tutte le tappe: $e");
   }
 }
+
+}//GpxService

@@ -1,9 +1,9 @@
 
 import 'package:flutter/material.dart';
-import '/providers/DBTrips_provider.dart';
-import '/providers/DBTrips_provider.dart';
+import 'package:project_app/services/gpx_services.dart';
+import '../providers/TripProvider.dart';
 import 'package:provider/provider.dart';
-import 'package:project_app/services/exportGpx.dart';
+import 'package:project_app/models/trip.dart';
 
 
 class TripStagesScreen extends StatelessWidget {
@@ -24,9 +24,9 @@ class TripStagesScreen extends StatelessWidget {
       ),
       
       body:  Center(
-        child: Consumer<DBtrips>(
-          builder: (context, dbTrips, child) {
-            Trip trip=dbTrips.TripList[indexTrips]; // prendo il viaggio selezionato dalla lista dei viaggi caricati, usando l'indice passato in input al costruttore
+        child: Consumer<TripProvider>(
+          builder: (context, tripProvider, child) {
+            Trip trip=tripProvider.TripList[indexTrips]; // prendo il viaggio selezionato dalla lista dei viaggi caricati, usando l'indice passato in input al costruttore
             List<dayTrip> stages=trip.dayTripsList ?? []; // aggiorno la lista delle tappe con i dati del provider, così se per qualche motivo non erano state caricate correttamente prima, ora le prendo direttamente da lì (nella maggior parte dei casi però non dovrebbe essere necessario, perché quando arriviamo qui le tappe dovrebbero essere già caricate nella variabile dayTrips del viaggio)
             return
         Column(
@@ -120,7 +120,7 @@ class TripStagesScreen extends StatelessWidget {
                                     ),
                                     onPressed: () async {
                                       // Richiama la funzione passandogli la tappa corrente (stage)
-                                      await exportStageGpx(stage);
+                                      await GpxService.exportStageGpx(stage);
                                       
                                       // Mostra un feedback visivo all'utente
                                       ScaffoldMessenger.of(context).showSnackBar(
@@ -158,7 +158,7 @@ class TripStagesScreen extends StatelessWidget {
                           );
 
                           // 2. Chiamiamo la funzione passando la lista delle tappe e il titolo
-                          await exportAllStagesGpx(stages, trip.title);
+                          await GpxService.exportAllStagesGpx(stages, trip.title);
                         },
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 15),

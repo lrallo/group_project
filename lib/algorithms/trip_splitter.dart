@@ -1,9 +1,7 @@
 // file: trip_splitter.dart
-import 'package:flutter/material.dart';
-
-import '/providers/DBTrips_provider.dart';
 import 'package:gpx/gpx.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:project_app/models/trip.dart';
 
 // TABELLA dei livelli di performance e sforzo giornaliero associato (in km) 
 //n.b. sono "km di sforzo", non km totali, quindi tengono conto anche del dislivello (es. 10 km con 1000 m di dislivello positivo equivalgono a 20 km di sforzo)
@@ -46,6 +44,8 @@ Future<void> calculateAndCut(Trip trip, int performanceLevel) async { //n.b. in 
 
   double? maxDayEffortScore = 0.0 ; 
   double elevationDivisor = 100.0;
+  print(' ');
+  print('----              inizio algoritmo calcolo tappe                      ----');
 
   // --- SELETTORE ATTIVITÀ ---
   if (activity == 'walk') {
@@ -196,5 +196,7 @@ Future<void> calculateAndCut(Trip trip, int performanceLevel) async { //n.b. in 
   for (var stage in generatedStages) {
     print('  ${stage.title} - Distanza: ${stage.dayDistance.toStringAsFixed(2)} km, Dislivello positivo: ${stage.dayElevationPos.toStringAsFixed(2)} m, Dislivello negativo: ${stage.dayElevationNeg.toStringAsFixed(2)} m');
   } 
+  print('----              fine algoritmo calcolo tappe                      ----');
+  print(' ');
 }//  calculateAndCut
 

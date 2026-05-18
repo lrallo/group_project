@@ -3,6 +3,7 @@ import 'package:project_app/screens/trainingBody.dart';
 import 'package:project_app/screens/tripsBody.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:project_app/screens/LoginPage.dart';
+import 'package:project_app/screens/profile.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -64,11 +65,27 @@ class _HomeScreenState extends State<HomePage> {
         child:ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(child: Text('Menu')),
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B365D), // Blu scuro
+              ),
+              child: Text('Menu', style: TextStyle(color: Colors.white, fontSize: 24)),
+            ),
+
+            ListTile(
+              leading: Icon(Icons.person),
+              title: Text('Profile'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => Profile()));
+              },
+            ),
+
             ListTile(
               leading: Icon(Icons.logout),
               title: Text('Logout'),
-              onTap: () => _toLoginPage(context),
+              onTap: () {
+                Logout(context);
+              },
             ),
           ],//children
           ),)
@@ -76,10 +93,12 @@ class _HomeScreenState extends State<HomePage> {
   }
 }
 
-void _toLoginPage(BuildContext context) async {
+void Logout(BuildContext context) async {
   final sp = await SharedPreferences.getInstance(); //accedo alla memoria
 
   await sp.remove('isUserLogged'); //rimuovo la chiave isUserLogged dalla memoria, in questo modo alla prossima apertura dell'app l'utente non sarà più loggato
+  await sp.remove('access'); //rimuovo il token di accesso dalla memoria
+  await sp.remove('refresh'); //rimuovo il token di refresh dalla memoria
   
   Navigator.pop(context); //torno alla pagina precedente (LoginPage)
   Navigator.of( context).pushReplacement( //sostituisco la pagina corrente (HomePage) con la LoginPage, in questo modo l'utente non potrà tornare alla HomePage premendo il tasto indietro

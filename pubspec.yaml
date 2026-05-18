@@ -43,6 +43,7 @@ dependencies:
   path_provider: ^2.1.2
   share_plus: ^7.2.2      # Per mostrare il menu di salvataggio/condivisione file
   universal_html: ^2.2.4
+  http: ^0.13.5
 
 dev_dependencies:
   flutter_test:
