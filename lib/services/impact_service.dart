@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:jwt_decoder/jwt_decoder.dart';
+import 'dart:io';
+import 'package:project_app/models/training.dart';
 
 class ImpactService{
 
@@ -8,13 +11,13 @@ class ImpactService{
   static String pingEndpoint = 'gate/v1/ping/';
   static String tokenEndpoint = 'gate/v1/token/';
   static String refreshEndpoint = 'gate/v1/refresh/';
-
-  static String stepsEndpoint = 'data/v1/steps/patients/';
+  static String exerciseEndpoint = 'data/v1/exercise/patients/';
+  
 
   static String patientUsername = 'Jpefaq6m58';
 
 
-  Future<int> getAndStoreTokens(String username, String password ) async {
+  static Future<int> getAndStoreTokens(String username, String password ) async {
 
     //Create the request
     final url = ImpactService.baseUrl + ImpactService.tokenEndpoint;
@@ -39,7 +42,7 @@ class ImpactService{
   
   
   //This method allows to refresh the stored JWT in SharedPreferences
-  Future<int> refreshTokens() async {
+  static Future<int> refreshTokens() async {
     //Create the request
     final url = ImpactService.baseUrl + ImpactService.refreshEndpoint;
     final sp = await SharedPreferences.getInstance();
@@ -67,7 +70,48 @@ class ImpactService{
   } //_refreshTokens
 
 
-  
+  static Future<List<Training>> getExerciseData(String day) async {
+    List<Training> result = [];
+    //1. prendi l'access token da SharedPreferences
+    final sp = await SharedPreferences.getInstance();
+    var access = sp.getString('access');
 
+    //2. se access token è scaduto, refreshalo
+    if(JwtDecoder.isExpired(access!)){
+      await ImpactService.refreshTokens();
+      access = sp.getString('access');
+    }//if
 
+    //3. ottieni la risposta dal server
+    final url = ImpactService.baseUrl + ImpactService.exerciseEndpoint + ImpactService.patientUsername + '/day/${day}/';
+    final headers = {HttpHeaders.authorizationHeader: 'Bearer $access'};
+
+    print('Calling: $url');
+    final response = await http.get(Uri.parse(url), headers: headers);
+    
+    
+    
+    if (response.statusCode == 200) {
+      // 4. faccio il parsing della risposta e ritorno i dati in formato training
+      print('Response: ${response.body}');
+      final decodedResponse = jsonDecode(response.body);
+      for (var i = 0; i < decodedResponse['data']['data'].length; i++) { //itero su ciascun allenamento della giornata
+        result.add( //aggiungo alla lista trainings un nuovo oggetto Training, usando il costruttore fromJson definito nel modello
+          Training.fromJson(
+            decodedResponse['data']['date'],
+            decodedResponse['data']['data'][i],
+          ),
+        );
+      } //for
+    } //if
+
+    //Return the result
+    print(' ');
+    print('Returning ${result.length} trainings');
+    for (var training in result) {
+      print(training.toString());
+    }
+    return result;
+
+  } //_getTrainingData
 }//Impact

@@ -14,6 +14,7 @@ class LoginPage extends StatelessWidget {
   
   final TextEditingController userController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  
   final ImpactService impact = ImpactService(); //instanzio Impact per poter usare i suoi metodi
   
 
@@ -84,7 +85,7 @@ class LoginPage extends StatelessWidget {
                   onPressed: () async {
                     
                     // check if credentials are correct
-                    final result = await impact.getAndStoreTokens(userController.text, passwordController.text);
+                    final result = await ImpactService.getAndStoreTokens(userController.text, passwordController.text);
                     // If correct, store the username and password in SharedPreferences
                     // and navigate to the Exposure screen (pushReplacement to remove the login screen from the stack)
                     if (result == 200) {
@@ -95,6 +96,8 @@ class LoginPage extends StatelessWidget {
 
                       final onboarding_completed = await sp.getBool('onboarding_completed');
                       if(onboarding_completed == null || onboarding_completed == false){ // se l'onboarding non è mai stato fatto o non è stato completato
+                        // == null se l'utente non ha mai fatto l'onboarding, quindi è la prima volta che accede all'app
+                        // == false se l'utente ha iniziato ma non completato l'onboarding, quindi non è la prima volta che accede all'app
                         Navigator.pushReplacement( context, MaterialPageRoute( builder: (context) => Onboarding(), ),);
                       }else{ //l'onboarding era già stato completato
                         Navigator.pushReplacement( context, MaterialPageRoute( builder: (context) => const HomePage(), ), );}

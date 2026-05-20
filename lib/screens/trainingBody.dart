@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
+import 'package:project_app/providers/TrainingProvider.dart ';
 
 
 class TrainingBody extends StatelessWidget {
@@ -18,7 +19,7 @@ class TrainingBody extends StatelessWidget {
             children: [
               _buildStatsCard(),
               const SizedBox(height: 20),
-              _buildUploadCard(),
+              _buildUploadCard(context),
             ],
           ),
         ),
@@ -108,7 +109,7 @@ class TrainingBody extends StatelessWidget {
   }
 
   // Card inferiore per il caricamento dei dati  - PARTE NON STATICA !! qui ci sarà il collegamento al server e l'output verrà salvato nello stato dell'app
-  Widget _buildUploadCard() {
+  Widget _buildUploadCard(BuildContext context) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(16), ),
@@ -133,7 +134,7 @@ class TrainingBody extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildUploadButton(Icons.upload_file, "Fitbit", Color(0xFF1B365D) ),
+                _buildUploadButton(context, Icons.upload_file, "Fitbit", Color(0xFF1B365D) ),
               ],
             ),
           ),
@@ -143,10 +144,11 @@ class TrainingBody extends StatelessWidget {
   }
 
   // Widget riutilizzabile per i bottoni di upload
-  Widget _buildUploadButton(IconData icon, String label, Color color) {
+  Widget _buildUploadButton(BuildContext context, IconData icon, String label, Color color) {
     return InkWell(
       onTap: () {
         // Logica per gestire l'upload del file o l'integrazione API
+        Provider.of<TrainingProvider>(context, listen: false).getTrainingData(); //chiamo il metodo getTrainingData del provider, che a sua volta chiama ImpactService per ottenere i dati di allenamento dal server e aggiorna lo stato dell'app con i nuovi dati
       },
       child: Column(
         children: [

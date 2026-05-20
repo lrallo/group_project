@@ -17,7 +17,7 @@ class TripProvider extends ChangeNotifier {
     if (toAdd !=null) {
       print("Oggetto Trip creato, inizio calcolo tappe...");
       // 2. calcola le tappe e aggiungi le tappe alla lista del viaggio dayTripsList
-      await calculateAndCut(toAdd, 5); // 5 verrà sostituito con l'effettiva performance dell'utente
+      await calculateAndCut(toAdd, 1); // 5 verrà sostituito con l'effettiva performance dell'utente
       // 3. aggiungi il viaggio alla lista  dei viaggi del provider
       print('calcolo tappe completato, aggiungo il viaggio alla lista dei viaggi');
       TripList.add(toAdd); 

@@ -21,7 +21,7 @@ class Splash extends StatelessWidget {
   
   // Method for checking if the user has still valid tokens (refresh token scaduto o mai fatto il login)
   void _checkLogin(BuildContext context) async {
-    final result = await ImpactService().refreshTokens();
+    final result = await ImpactService.refreshTokens();
     if (result == 200) { // se il refresh token NON è scaduto
       Navigator.of(context)
         .pushReplacement(MaterialPageRoute(builder: (context) => const HomePage()));

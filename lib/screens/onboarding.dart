@@ -191,7 +191,7 @@ class _OnboardingState extends State<Onboarding> {
               right: 16,
               child: TextButton(
                 onPressed: () async {
-                  await _setOnboardingCompleted();
+                  await _setOnboardingCompleted(); // SBAGLIATO : voglio che rimanghi null cos' all'utente verrà ridata la possibilità di completarlo
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => const HomePage()),

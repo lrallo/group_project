@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/TripProvider.dart';
+import 'providers/TrainingProvider.dart';
 import 'package:project_app/screens/splash.dart';
 
 
@@ -10,10 +11,18 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => TripProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<TripProvider>(
+          create: (context) => TripProvider(),
+        ),
+        ChangeNotifierProvider<TrainingProvider>(
+          create: (context) => TrainingProvider(),
+        ),
+      ],
       child: MaterialApp(
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
@@ -25,3 +34,6 @@ class MyApp extends StatelessWidget {
     );
   } //build
 }//MyApp
+
+
+
