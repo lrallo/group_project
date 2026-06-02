@@ -1,37 +1,56 @@
+// file: lib/providers/TrainingProvider.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:project_app/algorithms/performance_analyzer.dart';
 import 'package:project_app/services/impact_service.dart';
 import 'package:project_app/models/training.dart';  
-import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:project_app/models/performanceMetrics.dart';
 
-
-
-
-// --- CHANGE NOTIFIER  --- 
 class TrainingProvider extends ChangeNotifier { 
-  List<Training> trainings = [];  // DB delle sessioni di addestramento caricati 
-  
-  
+  PerformanceMetrics? userMetrics; 
+  bool _isLoading = false;
+  bool get isLoading => _isLoading; 
 
-  void getTrainingData() async {
-
-     // 1. prendo la data di ieri
-    DateTime showDate = DateTime.now().subtract(const Duration(days: 1)); //prendo la data di ieri
-    String formattedDate = DateFormat('yyyy-MM-dd').format(showDate);
-
-    print('Getting data of $formattedDate');
-    // 2. mostro una schermata di caricamento (non implementata in questo snippet, ma si può fare con un booleano isLoading e un CircularProgressIndicator)
-    
-    // 3. prendo il training usando ImpactService
-    trainings = await ImpactService.getExerciseData(formattedDate); // prendi il training del giorno 1 giugno 2024 (questo è un esempio, poi si dovrà prendere il training del giorno corrente)
-
-    // altri passaggi per calcolare le performance dell'utente
-
-    // Notifico
+  Future<int> getTrainingData() async {
+    _isLoading = true;
     notifyListeners();
-    } 
-  }
-  // 1. prende il training usando ImpactService
-  // 2 lo trasforma in un oggetto Training e calcola le performance dell'utente
-  // 2. aggiungi il training alla lista dei training del provider
-  // 3. notifica i listener, in modo che le schermate (Consumer) si aggiornino con il nuovo livello di performance dell'utente
 
+    try {
+      DateTime endDate = DateTime.now().subtract(const Duration(days: 1)); 
+      DateTime startDate = endDate.subtract(const Duration(days: 60)); 
+      
+      List<Training>? rawData = await ImpactService.getHistoricalExerciseData(startDate, endDate);
+      
+      if (rawData == null) return 401; 
+
+      // Generazione metriche
+      userMetrics = PerformanceAnalyzer.analyze(rawData);
+
+      // Salvataggi critici per l'app offline e il TripProvider
+      final sp = await SharedPreferences.getInstance();
+      await sp.setDouble('maxWalk', userMetrics!.maxWalkEffortKm); //km di camminata sostenibile in un giorno di viaggio a tappe
+      await sp.setDouble('maxBike', userMetrics!.maxBikeEffortKm);
+      await sp.setInt('analysisWindow', userMetrics!.analysisWindowDays);
+      await sp.setInt('activeDays', userMetrics!.activeDays);
+      await sp.setString('fitnessLevel', userMetrics!.fitnessLevel);
+      await sp.setString('dailyWalkMap', jsonEncode(userMetrics!.dailyWalkEffort));//salvo la mappa giorno->km di camminata per mostrare i dettagli all'utente, e per eventuali calcoli futuri
+      await sp.setString('dailyBikeMap', jsonEncode(userMetrics!.dailyBikeEffort));
+      print('\n---- Metriche salvate nella memoria locale (SharedPreferences) ----');
+      return 200; 
+      
+    } catch (e) {
+      print('Errore critico in getTrainingData: $e');
+      return 500;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    } 
+  } 
+
+  void clearData() {
+    userMetrics = null;
+    _isLoading = false;
+    notifyListeners();
+  }
+}

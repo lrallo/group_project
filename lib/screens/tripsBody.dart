@@ -5,6 +5,8 @@ import 'package:project_app/models/trip.dart';
 import 'package:dotted_border/dotted_border.dart'; //bordo tratteggiato per la card di upload del GPX
 import 'package:flutter/foundation.dart' show kIsWeb; // Serve per verificare se siamo su web o su mobile, perché la gestione dei file è diversa
 import 'package:project_app/screens/trip_stages_screen.dart'; // Importiamo la schermata delle tappe per poterci navigare quando clicchiamo su un viaggio nella lista
+import 'package:shared_preferences/shared_preferences.dart'; // Per accedere alla memoria locale e recuperare i valori di maxEffortWalk e maxEffortBike calcolati dal provider di training, così da passarli al provider dei viaggi quando carichiamo un nuovo percorso, in modo che possa calcolare le tappe in base al livello di performance dell'utente
+
 
 class Tripsbody extends StatefulWidget { // StatefulWidget perché dobbiamo gestire lo stato della selezione dell'attività (walk/bike) e abilitare/disabilitare il tasto di upload
   const Tripsbody({super.key});
@@ -57,7 +59,7 @@ class _TripsbodyState extends State<Tripsbody> {
                         }else{
                           // SE è stata selezionata un'attività, procedo con l'apertura del file picker
                           print("Apertura selettore file gpx per la modalità: $selectedActivity");
-                        
+                          
                           // chiamo il metodo addTrip del provider, che si occuperà di aprire il file picker, leggere il file, creare l'oggetto Trip, calcolare le tappe e aggiungere tutto al DB (lista dei viaggi) del provider
                           bool success = await Provider.of<TripProvider>(context, listen: false).addTrip(selectedActivity!); 
                           
@@ -67,6 +69,7 @@ class _TripsbodyState extends State<Tripsbody> {
                                 content: Text('Percorso caricato nella tua lista!'),
                                 backgroundColor: Colors.green,
                               ),);
+                           
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -75,7 +78,7 @@ class _TripsbodyState extends State<Tripsbody> {
                               ),);
                           }
 
-                          print('Stato attuale del DB:\n${Provider.of<TripProvider>(context, listen: false).TripList.toString()}');
+                          print('Stato attuale del DB:\n${Provider.of<TripProvider>(context, listen: false).tripList.toString()}');
                           
                           // riaggiorno la variabile di stato isReadyToUpload, così se l'utente vuole caricare un altro file deve prima scegliere se è walk o bike
                           isReadyToUpload = false;
@@ -197,7 +200,7 @@ class _TripsbodyState extends State<Tripsbody> {
             Expanded( 
               child: Consumer<TripProvider>(
                 builder: (context, dbTrips, child) {
-                  final tripsList = dbTrips.TripList;
+                  final tripsList = dbTrips.tripList;
 
                   if (tripsList.isEmpty) {
                     return const Center(
@@ -249,7 +252,7 @@ class _TripsbodyState extends State<Tripsbody> {
           context,
           MaterialPageRoute(
             builder: (context) => TripStagesScreen(
-              indexTrips: Provider.of<TripProvider>(context, listen: false).TripList.indexOf(trip) // passiamo anche l'indice del viaggio selezionato, così nella schermata delle tappe possiamo accedere alla lista delle tappe di quel viaggio nel provider
+              indexTrips: Provider.of<TripProvider>(context, listen: false).tripList.indexOf(trip) // passiamo anche l'indice del viaggio selezionato, così nella schermata delle tappe possiamo accedere alla lista delle tappe di quel viaggio nel provider
               
               ), // 
           ),

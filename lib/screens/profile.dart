@@ -42,21 +42,6 @@ class Profile extends StatelessWidget {
                   _buildProfileData('Surname', data['surname']),
                   _buildProfileData('Gender', data['gender']),
                   _buildProfileData('Date of Birth', data['dob']),
-                  SizedBox(height: 30),
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final sp = await SharedPreferences.getInstance();
-                        await sp.remove('username');
-                        await sp.remove('password');
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => LoginPage()),
-                        );
-                      },
-                      child: Text('Logout'),
-                    ),
-                  ),
                 ],
               );
             },

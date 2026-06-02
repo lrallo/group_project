@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '/screens/HomePage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:project_app/services/impact_service.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert'; // libreria per jsdondecode
 import 'package:project_app/screens/onboarding.dart';
 
 
@@ -84,17 +82,14 @@ class LoginPage extends StatelessWidget {
                   
                   onPressed: () async {
                     
-                    // check if credentials are correct
+                    // chiedo i token a Impact, usando le credenziali
                     final result = await ImpactService.getAndStoreTokens(userController.text, passwordController.text);
-                    // If correct, store the username and password in SharedPreferences
-                    // and navigate to the Exposure screen (pushReplacement to remove the login screen from the stack)
+                    
                     if (result == 200) {
                       final sp = await SharedPreferences.getInstance();
-                      // SALVO LE CREDENZIALI DELL'UTENTE IN SHARED PREFERENCES 
-                      await sp.setString('username', userController.text); 
-                      await sp.setString('password', passwordController.text);
-
-                      final onboarding_completed = await sp.getBool('onboarding_completed');
+                    
+                      final onboarding_completed = await sp.getBool('onboarding_completed'); //aggiorno la variabile della sp
+                      
                       if(onboarding_completed == null || onboarding_completed == false){ // se l'onboarding non è mai stato fatto o non è stato completato
                         // == null se l'utente non ha mai fatto l'onboarding, quindi è la prima volta che accede all'app
                         // == false se l'utente ha iniziato ma non completato l'onboarding, quindi non è la prima volta che accede all'app
@@ -102,8 +97,8 @@ class LoginPage extends StatelessWidget {
                       }else{ //l'onboarding era già stato completato
                         Navigator.pushReplacement( context, MaterialPageRoute( builder: (context) => const HomePage(), ), );}
 
-                    } else {
-                      // If incorrect, show a SnackBar with an error message
+                    } else if (result == 401) {
+                      // se le credenziali sono errate
                       ScaffoldMessenger.of(context)
                         ..removeCurrentSnackBar()
                         ..showSnackBar(const SnackBar(
@@ -112,6 +107,28 @@ class LoginPage extends StatelessWidget {
                             margin: EdgeInsets.all(8),
                             duration: Duration(seconds: 2),
                             content:Text("username or password incorrect")
+                            ));
+                    }else if(result == 500){
+                      // se c'è un errore del server
+                      ScaffoldMessenger.of(context)
+                        ..removeCurrentSnackBar()
+                        ..showSnackBar(const SnackBar(
+                            backgroundColor: Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.all(8),
+                            duration: Duration(seconds: 2),
+                            content:Text("Server error, please try again later")
+                            ));
+                    } else {
+                      // se c'è un errore generico
+                      ScaffoldMessenger.of(context)
+                        ..removeCurrentSnackBar()
+                        ..showSnackBar(const SnackBar(
+                            backgroundColor: Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.all(8),
+                            duration: Duration(seconds: 2),
+                            content:Text("An error occurred, please try again later")
                             ));
                     }
                   },//onPressed

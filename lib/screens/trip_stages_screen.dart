@@ -26,7 +26,7 @@ class TripStagesScreen extends StatelessWidget {
       body:  Center(
         child: Consumer<TripProvider>(
           builder: (context, tripProvider, child) {
-            Trip trip=tripProvider.TripList[indexTrips]; // prendo il viaggio selezionato dalla lista dei viaggi caricati, usando l'indice passato in input al costruttore
+            Trip trip=tripProvider.tripList[indexTrips]; // prendo il viaggio selezionato dalla lista dei viaggi caricati, usando l'indice passato in input al costruttore
             List<dayTrip> stages=trip.dayTripsList ?? []; // aggiorno la lista delle tappe con i dati del provider, così se per qualche motivo non erano state caricate correttamente prima, ora le prendo direttamente da lì (nella maggior parte dei casi però non dovrebbe essere necessario, perché quando arriviamo qui le tappe dovrebbero essere già caricate nella variabile dayTrips del viaggio)
             return
         Column(

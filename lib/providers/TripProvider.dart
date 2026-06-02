@@ -1,40 +1,56 @@
+// file: lib/providers/TripProvider.dart
 import 'package:flutter/material.dart';
 import 'package:project_app/algorithms/trip_splitter.dart';
 import 'package:project_app/models/trip.dart';
 import 'package:project_app/services/gpx_services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-
-// --- CHANGE NOTIFIER  --- 
 class TripProvider extends ChangeNotifier { 
-  List<Trip> TripList = [];  // DB dei viaggi caricati 
+  List<Trip> tripList = [];  // DB dei viaggi caricati (meglio camelCase per le variabili)
 
+  // Nota: ho tolto userMaxEffort dai parametri, perché ce lo andiamo a pescare da soli dalla memoria locale!
   Future<bool> addTrip(String selectedActivity) async {
-
-    // 1. prendi il viaggio da aggiungere e calcola le tappe
     print('Inizio utilizzo di File Picker (gpx_services) ...');
     Trip? toAdd = await GpxService.pickGpx(selectedActivity);
 
-    if (toAdd !=null) {
-      print("Oggetto Trip creato, inizio calcolo tappe...");
-      // 2. calcola le tappe e aggiungi le tappe alla lista del viaggio dayTripsList
-      await calculateAndCut(toAdd, 1); // 5 verrà sostituito con l'effettiva performance dell'utente
-      // 3. aggiungi il viaggio alla lista  dei viaggi del provider
-      print('calcolo tappe completato, aggiungo il viaggio alla lista dei viaggi');
-      TripList.add(toAdd); 
-      // 4. notifica i listener, in modo che le schermate (Consumer) che stanno ascoltando vengano rebuildate
-      notifyListeners();
-      return true; // ritorna true se il viaggio è stato aggiunto correttamente 
+    if (toAdd != null) {
+      print("Oggetto Trip creato, recupero prestazioni utente...");
+      
+      // 1. Recupero la performance calcolata in precedenza (Offline)
+      final sp = await SharedPreferences.getInstance();
+      double maxEffort = 20.0; // Valore di default di sicurezza (es. utente sedentario)
+      
+      if (selectedActivity.toLowerCase() == 'walk') {
+        maxEffort = sp.getDouble('maxWalk') ?? 15.0; // maxWalk è la chiave salvata nel TrainingProvider
+      } else if (selectedActivity.toLowerCase() == 'bike') {
+        maxEffort = sp.getDouble('maxBike') ?? 40.0; // maxBike è la chiave salvata nel TrainingProvider
+      }
 
+      print("Limite calcolato per $selectedActivity: $maxEffort km di sforzo");
+
+      // 2. Calcola le tappe tagliando il file GPX
+      await calculateAndCut(toAdd, maxEffort); 
+
+      // 3. Aggiungi il viaggio alla lista
+      tripList.add(toAdd); 
+      
+      // 4. Notifica la UI
+      notifyListeners();
+      return true; 
     } else {
-      print("Errore: Viaggio non caricato correttamente.");
-      return false; // Esce dalla funzione se il viaggio non è stato caricato
+      print("Errore o annullamento: Viaggio non caricato.");
+      return false; 
     }
   }
   
   @override
   String toString() {
-    return ' ${TripList.map((trip) => trip.toString()).join('\n')}';
+    return ' ${tripList.map((trip) => trip.toString()).join('\n')}';
+  }
+
+  // metodo per eliminare tutti i dati, se l'utente fa il logout
+  void clearData() {
+    tripList.clear(); // Svuota la lista dei viaggi
+    notifyListeners();
   }
 }
-
-
