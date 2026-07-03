@@ -100,20 +100,21 @@ class ImpactService{
       print('Access token refreshed successfully.');
     } else {
       print('Failed to refresh access token. Status code: $refreshResult');
-      return null; // se non riesco a refreshare, ritorno null perché non posso fare richieste a IMPACT
+      return null; // se non riesco a refreshare, significa che il refresh token è scaduto, ritorno null cosi l'utente viene reindirizzato al login
     }
   }
 
   // 4. fai richieste a blocchi di 7 giorni finché non arrivi alla data finale desiderata
   while (currentStart.isBefore(endDate) || currentStart.isAtSameMomentAs(endDate)) {
-    // Aggiungi 6 giorni per avere un blocco di 7 giorni inclusivi
+    // Aggiungo 6 giorni per avere un blocco di 7 giorni inclusivi
     DateTime currentEnd = currentStart.add(const Duration(days: 6)); 
     
-    // Assicurati di non superare la data finale desiderata
+    // Mi assicuro di non superare la data finale desiderata
     if (currentEnd.isAfter(endDate)) {
       currentEnd = endDate;
     }
     
+    // Formatto le date in stringhe per la richiesta
     String chunkStartStr = DateFormat('yyyy-MM-dd').format(currentStart);
     String chunkEndStr = DateFormat('yyyy-MM-dd').format(currentEnd);
     print('Richiesta dati a IMPACT dal $chunkStartStr al $chunkEndStr...');
@@ -122,15 +123,15 @@ class ImpactService{
     final headers = {HttpHeaders.authorizationHeader: 'Bearer $access'};
 
     // 4. ottieni la risposta dal server
-    print('Calling: $url');
     final response = await http.get(Uri.parse(url), headers: headers);
     print('Response status: ${response.statusCode}');
   
     if (response.statusCode == 200) {
       // 5. faccio il parsing della risposta e ritorno i dati in formato training
-      final decodedResponse = jsonDecode(response.body);
+      final decodedResponse = jsonDecode(response.body); // decodifico la risposta JSON
       for (var dayData in decodedResponse['data']) {  //itero su ogni giorno (se ci sono) in cui ci sono stati allenamenti
         String date = dayData['date']; // Prendo la data di questo specifico giorno
+        // per ogni allenamento di quel giorno creo un oggetto Training e lo aggiungo alla lista dei risultati
         for (var exercise in dayData['data']) { //itero su ogni allenamento di quel giorno (se ci sono) e creo un oggetto Training, che aggiungo alla lista dei risultati
           result.add( Training.fromJson(date, exercise), );
         }//for

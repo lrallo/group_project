@@ -3,10 +3,10 @@ import 'package:project_app/screens/trainingBody.dart';
 import 'package:project_app/screens/tripsBody.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:project_app/screens/LoginPage.dart';
-import 'package:project_app/screens/profile.dart';
 import 'package:provider/provider.dart';
 import 'package:project_app/providers/TrainingProvider.dart';
 import 'package:project_app/providers/TripProvider.dart';
+import 'package:project_app/screens/settings_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,6 +16,21 @@ class HomePage extends StatefulWidget {
 
 class _HomeScreenState extends State<HomePage> {
   int selectedIndex = 0; //inizializza l'indice selezionato a 0 (Training)
+  String _nickname = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNickname();
+  }
+
+  Future<void> _loadNickname() async {
+    final sp = await SharedPreferences.getInstance();
+    setState(() {
+      _nickname = sp.getString('nickname') ?? "Viaggiatore"; // Fallback se non c'è
+    });
+  }
+ 
 
   // List of pages
   final List<Widget> pages = [
@@ -53,47 +68,60 @@ class _HomeScreenState extends State<HomePage> {
         ],
       ),
 
-      appBar: AppBar(
+    appBar: AppBar(
           title: Text(
-            selectedIndex == 0 ? 'MY TRAINING' : 'MY TRIPS',
+            selectedIndex == 0 ? 'I viaggi di $_nickname' : 'Allenamento',
             style: TextStyle( color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18, ),
           ),
-          backgroundColor: const Color(0xFF1B365D), // Blu scuro
+          backgroundColor: const Color(0xFF1B365D),
           centerTitle: true,
           elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
 
       drawer: Drawer( 
-        child:ListView(
+        child: ListView(
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                color: const Color(0xFF1B365D), // Blu scuro
+              decoration: const BoxDecoration(
+                color: Color(0xFF1B365D), 
               ),
-              child: Text('Menu', style: TextStyle(color: Colors.white, fontSize: 24)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const Icon(Icons.account_circle, size: 60, color: Colors.white),
+                  const SizedBox(height: 10),
+                  Text('Ciao, $_nickname!', style: const TextStyle(color: Colors.white, fontSize: 20)),
+                ],
+              ),
             ),
 
-            ListTile(
-              leading: Icon(Icons.person),
-              title: Text('Profile'),
-              onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => Profile()));
+            ListTile( 
+              leading: const Icon(Icons.settings),
+              title: const Text('Impostazioni'),
+              onTap: () async { 
+                // 1. chiudo il drawer prima di navigare alla pagina delle impostazioni
+                Navigator.pop(context); 
+                // 2. navigo alla pagina delle impostazioni 
+                await Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+                // 3. quando torno alla HomePage, ricarico il nickname dalla sp, e rifaccio il setState
+                _loadNickname(); 
               },
             ),
 
             ListTile(
-              leading: Icon(Icons.logout),
-              title: Text('Logout'),
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
               onTap: () {
-                // 1. Chiudiamo prima il Drawer laterale per fare pulizia a schermo
-                Navigator.pop(context); // tolgo dlla stack del navigator il Drawer, in questo modo si chiude il Drawer e vedo la HomePage, invece di vedere il Drawer sovrapposto alla LoginPage dopo il logout
-                // 2. Mostriamo il pop-up di conferma
+                Navigator.pop(context);
                 _showLogoutConfirmation(context);
               },
             ),
-          ],//children
-          ),)
+        ],
+      ),
+    )
     );
   }
 }
@@ -106,15 +134,15 @@ void _showLogoutConfirmation(BuildContext context) {
         title: const Text('Conferma Logout'),
         content: const Text('Sei sicuro di voler uscire? Tutti i tuoi dati locali verranno cancellati.'),
         actions: [
-          // Bottone NO
+          // --Bottone NO --
           TextButton(
             child: const Text('No'),
-            onPressed: () {
-              // Se l'utente schiaccia 'No', chiudiamo semplicemente il dialog e torniamo alla HomePage senza fare altre azioni
+            onPressed: () { // Chiudiamo l'alert dialog e torno alla HomePage senza fare nulla
               Navigator.of(dialogContext).pop(); 
             },
           ),
-          // Bottone YES
+
+          // --Bottone YES --
           TextButton(
             child: const Text('Yes', style: TextStyle(color: Colors.red)),
             onPressed: () async {
@@ -125,9 +153,9 @@ void _showLogoutConfirmation(BuildContext context) {
               Provider.of<TrainingProvider>(context, listen: false).clearData();
               Provider.of<TripProvider>(context, listen: false).clearData();
 
-              // 3. Accediamo alle SharedPreferences e puliamo tutto
+              // 3. Accediamo alle SharedPreferences e PULIAMO TUTTO DEFINITIVAMENTE
               final sp = await SharedPreferences.getInstance();
-              await sp.clear(); 
+              await sp.clear();
 
               // 4. Controllo di sicurezza prima di usare il context dopo un 'await'
               if (!context.mounted) return;

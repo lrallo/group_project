@@ -5,15 +5,19 @@ import 'package:gpx/gpx.dart';
 class Trip {
   String title;    // Titolo del viaggio
   Gpx gpxData;    // Dati GPX del viaggio, inizializzato come null o con un costruttore vuoto
-  String activity; // Salverà 'walk' o 'bike'
+  String activity;//  'walk' o 'bike'
   double distance = 0.0; 
   double elevationPos = 0.0; 
   double elevationNeg = 0.0;
   List<dayTrip>? dayTripsList; // Lista dei dayTrip associati a questo viaggio, inizializzata come vuota
   late DateTime importDate;
 
+  List<double> distanceProfile = [];  // Asse X del plot: Distanza cumulativa (km)
+  List<double> elevationProfile = []; // Asse Y del plot: Altitudine (metri)
+  List<double> cutDistances = [];     // Distanze in cui avviene il taglio (km)
+
   Trip( this.title, this.activity, this.gpxData){
-    importDate = DateTime.now(); //registra la data e l'ora esatta in cui l'oggetto viene creato
+    importDate = DateTime.now(); // registra la data e l'ora esatta in cui l'oggetto viene creato
   }
 
   @override  //metodo che ci serve solo per il debug, per stampare in modo leggibile le informazioni di un viaggio quando facciamo print(trip)

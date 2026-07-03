@@ -5,6 +5,7 @@ import 'package:project_app/models/performanceMetrics.dart';
 
 class PerformanceAnalyzer {
   static PerformanceMetrics analyze(List<Training> trainings) {
+    // input: lista di allenamenti (oggetto Training)
     print(' \n---- Inizio analisi prestazioni su ${trainings.length} allenamenti...  ----');
     
     if (trainings.isEmpty) {
@@ -13,7 +14,6 @@ class PerformanceAnalyzer {
         maxBikeEffortKm: 40.0,
         analysisWindowDays: 1,
         activeDays: 0,
-        fitnessLevel: "Sedentario",
         totalWalkEffort: 0.0,
         totalBikeEffort: 0.0,
         dailyWalkEffort: {},
@@ -27,34 +27,35 @@ class PerformanceAnalyzer {
     double totalBike = 0.0;
 
     // 1. Calcolo dinamico della finestra di analisi
-    DateTime minDate = trainings.first.timestamp;
-    DateTime maxDate = trainings.first.timestamp;
+    DateTime minDate = trainings.first.timestamp; // data più vecchia
+    DateTime maxDate = trainings.first.timestamp; // data più recente
 
     for (var t in trainings) {
-      print('\nAnalizzando allenamento: ${t.activityName} del ${t.timestamp} - Distanza: ${t.distance} km, Elevazione: ${t.elevationGain} m');
+      print('\nAnalizzando allenamento: ${t.activityName} del ${t.timestamp} - Distanza: ${t.distance} km - Elevazione: ${t.elevationGain} m');
       if (t.timestamp.isBefore(minDate)) minDate = t.timestamp;
       if (t.timestamp.isAfter(maxDate)) maxDate = t.timestamp;
 
-      double sessionEffort = t.distance + (t.elevationGain / 100.0);
+      double sessionEffort = t.distance + (t.elevationGain / 100.0); // Regola di Naismith
       String dateKey = t.dateString;
       String act = t.activityName.toLowerCase();
-      print('Session Effort calcolato: $sessionEffort ');
+      print('Session Effort calcolato: ${sessionEffort.toStringAsFixed(2)} km'); 
 
-      if (act.contains('bici') || act.contains('bike')) {
+      // aggiorno le mappe di sforzo giornaliero e i totali complessivi
+      if (act.contains('bici') || act.contains('bike')) { 
         totalBike += sessionEffort;
         dailyBikeMap[dateKey] = (dailyBikeMap[dateKey] ?? 0.0) + sessionEffort;
       } else {
         totalWalk += sessionEffort;
         dailyWalkMap[dateKey] = (dailyWalkMap[dateKey] ?? 0.0) + sessionEffort;
       }
-      print('Totale Walk Effort finora: $totalWalk km, Totale Bike Effort finora: $totalBike km');
+      print('Totale Walk Effort finora: ${totalWalk.toStringAsFixed(2)} km | Totale Bike Effort finora: ${totalBike.toStringAsFixed(2)} km');
     }
     
 
     // Giorni totali trascorsi tra il primo e l'ultimo allenamento (+1 per includere gli estremi)
-    int analysisWindow = maxDate.difference(minDate).inDays + 1;
+    int analysisWindow = maxDate.difference(minDate).inDays + 1; 
     // Quanti giorni unici hanno almeno un allenamento?
-    int activeDays = {...dailyWalkMap.keys, ...dailyBikeMap.keys}.length;
+    int activeDays = {...dailyWalkMap.keys, ...dailyBikeMap.keys}.length; // unisco le le chiavi delle due mappe, eliminando duplicati, e conto i giorni attivi
 
     // 2. Calcolo Medie
     double avgDailyWalk = totalWalk / analysisWindow;
@@ -69,9 +70,12 @@ class PerformanceAnalyzer {
     else if (overallDailyEffort > 1.5) fitnessProfile = "Attivo";
 
     // 4. Stima della "Sopportazione" (Endurance) in un viaggio a tappe
-    // Formula evidence-based: Baseline minima + (carico cronico medio * fattore di spinta 2.5)
-    double maxWalkEndurance = 10.0 + (avgDailyWalk * 2.5);
-    double maxBikeEndurance = 30.0 + (avgDailyBike * 2.5);
+    // Calcoliamo il Carico Cronico Ibrido (aggiungendo il 15 o 35%  dell'altro sport)
+    double chronicDailyWalk = (avgDailyWalk + (avgDailyBike * 0.15)) ;
+    double chronicDailyBike = (avgDailyBike + (avgDailyWalk * 0.35)) ;
+    // Formula ACWR Gabbett
+    double maxWalkEndurance = 10.0 + (chronicDailyWalk * 1.5);
+    double maxBikeEndurance = 30.0 + (chronicDailyBike * 1.5);
 
     print('\n---- Analisi completata ----');
     print('Finestra di analisi: $analysisWindow giorni, Giorni attivi: $activeDays');
@@ -83,9 +87,8 @@ class PerformanceAnalyzer {
     return PerformanceMetrics(
       maxWalkEffortKm: maxWalkEndurance, // km di camminata sostenibile in un giorno di viaggio a tappe
       maxBikeEffortKm: maxBikeEndurance,
-      analysisWindowDays: analysisWindow,
-      activeDays: activeDays, // giorni con almeno un allenamento
-      fitnessLevel: fitnessProfile, 
+      analysisWindowDays: analysisWindow, // giorni totali analizzati
+      activeDays: activeDays,             // giorni con almeno un allenamento
       totalWalkEffort: totalWalk,// km totali di camminata nella window
       totalBikeEffort: totalBike,
       dailyWalkEffort: dailyWalkMap, // mappa giorno -> km di camminata

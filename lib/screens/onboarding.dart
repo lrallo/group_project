@@ -1,308 +1,254 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:project_app/screens/HomePage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:project_app/utils/debug_utils.dart'; // importa la funzione per stampare tutte le SharedPreferences
-import 'package:provider/provider.dart';
-import 'package:project_app/providers/TrainingProvider.dart';
+import 'package:project_app/widgets/impact_dialog.dart';
 import 'package:project_app/screens/maual_effort_screen.dart';
-import 'package:project_app/screens/LoginPage.dart';
+import 'package:project_app/providers/TrainingProvider.dart';
+import 'package:provider/provider.dart';
 
-class Onboarding extends StatefulWidget {
-  Onboarding({Key? key}) : super(key: key);
 
+class Onboarding extends StatefulWidget { 
+  const Onboarding({Key? key}) : super(key: key);
   @override
   State<Onboarding> createState() => _OnboardingState();
 }
 
+class _OnboardingState extends State<Onboarding> { 
+  final PageController _pageController = PageController(); 
+  // instanza di un oggetto PageController che permette di controllare un istanza di PageView, 
+  // un widget che permette di scorrere tra più pagine
 
-class _OnboardingState extends State<Onboarding> {
- 
-  final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _surnameController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
-  String? _selectedGender;
+  int _currentPage = 0; // indice della pagina corrente
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSavedData();
-  }
+  final TextEditingController _nicknameController = TextEditingController(); 
 
-  Future<void> _loadSavedData() async {
-    final sp = await SharedPreferences.getInstance();
-    setState(() {
-      _nameController.text = sp.getString('name') ?? '';
-      _surnameController.text = sp.getString('surname') ?? ''; 
-      _dateController.text = sp.getString('dob') ?? ''; 
-      _selectedGender = sp.getString('gender'); 
-    });
-  }
+  // Mappa con scritte e immagini per le pagine di onboarding
+  final List<Map<String, String>> onboardingData = [
+    {
+      "title": "WELCOME TO SMARTSTAGE",
+      "text": "Discover sustainable travel through multi-day trekking and cycling adventures",
+      "image": "assets/onboarding_1.jpg" // Sostituisci con le tue illustrazioni
+    },
+    {
+      "title": "KNOW YOUR LEVEL",
+      "text": "Connect your training data or input your daily effort to get personalized stage recommendations.",
+      "image": "assets/onboarding_2.jpg"
+    },
+    {
+      "title": "PERSONALIZED STAGES",
+      "text": "Upload your GPX file and let SmartStage split your journey into daily stages based on your effort level.",
+      "image": "assets/onboarding_3.jpg"
+    },
+  ];
 
-  // Funzione per mostrare il date picker e aggiornare il campo data
-  Future<void> _selectDate(BuildContext context) async {
-  DateTime? picked = await showDatePicker(
-    context: context,
-    initialDate: DateTime(2000),
-    firstDate: DateTime(1900),
-    lastDate: DateTime.now(),);
-    if (picked != null) {
-      setState(() {
-        _dateController.text = DateFormat('dd/MM/yyyy').format(picked);
-      });}
-  }
 
-  Future<void> _setOnboardingCompleted() async {
-  final sp = await SharedPreferences.getInstance();
-  await sp.setBool('onboarding_completed', true);
-  }
+  // Funzione finale che salva il nome e chiama IMPACT
+  Future<void> _finishOnboarding() async {
 
-  // funzione che salva i dati dell'onboarding e mostra il pop-up per la sincronizzazione con IMPACT
-  Future<void> _submitForm() async { 
-    if (_formKey.currentState!.validate()) { // se il form è valido
-    // 1. Salvo i dati dell'onboarding nella SharedPreferences
-      final sp = await SharedPreferences.getInstance();
-      await sp.setString('name', _nameController.text);
-      await sp.setString('surname', _surnameController.text);
-      await sp.setString('gender', _selectedGender!);
-      await sp.setString('dob', _dateController.text);
-      await sp.setBool('onboarding_completed', true);
-      printAllSharedPreferences();// stampo tutte le SharedPreferences per debug
-      
-    // 2. Mostro il pop-up per chiedere l'autorizzazione a IMPACT
-      await _showImpactPermissionDialog(context);
+    String nickname = _nicknameController.text.trim();
+    if (nickname.isEmpty) {
+      nickname = "Viaggiatore"; // Fallback di sicurezza
     }
-  }
+    // 1. Salvo il nickname 
+    final sp = await SharedPreferences.getInstance();
+    await sp.setString('nickname', nickname);
+    
+    if (!mounted) return; //se !mounted è true, significa che l'utente ha chiuso la pagina di onboarding prima che la funzione finisse, 
+    // dico a flutter di non fare più setState o navigazioni, altrimenti crasha l'app
 
-
-  Future<void> _showImpactPermissionDialog(BuildContext context) async {
-    return showDialog<void>(
+    // imposto already_logged come true
+    await sp.setBool('already_logged', true);
+    
+    // 2. Apro il dialog per chiedere il permesso di accedere ai dati IMPACT
+    await showImpactPermissionDialog(
       context: context,
-      barrierDismissible: false, // Impedisce la chiusura cliccando fuori
-      builder: (BuildContext dialogContext) {
-        // Usiamo un flag locale per gestire il caricamento DENTRO il pop-up
-        bool isFetching = false; 
-
-        return StatefulBuilder( // widget che ci permette di aggiornare lo stato SOLO del dialog senza rifare il build dell'intera pagina
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Accesso ai dati IMPACT'),
-              
-              // Se isFetching è true, mostriamo la rotella. Altrimenti il testo normale.
-              content: isFetching
-                  ? const Column(
-                      mainAxisSize: MainAxisSize.min, // Adatta l'altezza al contenuto
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Sincronizzazione dati in corso...'),
-                      ],
-                    )
-                  : const Text(
-                      'Vuoi permettere all\'app di accedere ai tuoi dati di allenamento dal server IMPACT per personalizzare la tua esperienza?'),
-              
-              
-              actions: isFetching
-                  ? []        // se stiamo scaricando (iFetching=true), non mostriamo bottoni
-                  : <Widget>[
-                      TextButton(
-                        child: const Text('No'),
-                        onPressed: () {
-                          // 1. chiude il dialog
-                          Navigator.of(dialogContext).pop(); 
-                          // 2. naviga alla schermata Manual Effort
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ManualEffortScreen()),
-                          );
-                        },
-                      ),
-                      TextButton(
-                        child: const Text('Sì'),
-                        onPressed: () async {
-                          // 1. Modifichiamo lo stato del DIALOG per mostrare il caricamento
-                          setDialogState(() {
-                            isFetching = true;
-                          });
-                          // 2. Chiamiamo il provider (che sotto il cofano imposterà anche il suo _isLoading)
-                          int status = await Provider.of<TrainingProvider>(context, listen: false).getTrainingData();
-                          
-                          // 3. Controllo sicurezza (buona pratica Flutter) 
-                          // Deve essere fatto prima di usare context per navigare
-                          if (!context.mounted) return;
-
-                          // 4. Chiudo il pop-up di caricamento 
-                          Navigator.of(dialogContext).pop();
-
-                          // 5. Gestiamo la navigazione in base all'esito UNA SOLA VOLTA
-                          if (status == 200) {
-                            print('Dati iniziali caricati con successo al primo avvio!');
-                            Navigator.pushReplacement( 
-                              context, 
-                              MaterialPageRoute(builder: (context) => const HomePage()) 
-                            );
-                          } else if (status == 401) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Sessione scaduta. Effettua il login di nuovo.'), backgroundColor: Colors.orange),
-                            );
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(builder: (context) => LoginPage()), 
-                              (Route<dynamic> route) => false 
-                            ); 
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Errore di connessione a IMPACT. Potrai sincronizzare i dati più tardi.. Riprova.'), backgroundColor: Colors.red),
-                            );
-                            Navigator.pushReplacement( 
-                              context, 
-                              MaterialPageRoute(builder: (context) => const ManualEffortScreen()) 
-                            );
-                          }
-                        },
-                      ),
-                    ],
-            );
-          },
-        );
+      onSuccess: () async { //utente schiaccia SI e .getTrainignData da 200
+        Provider.of<TrainingProvider>(context, listen: false).changePermission(true);// aggiorno variabile della sp e del provider
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
       },
+      onError: () async { //utente schiaccia SI ma .getTrainignData un errore diverso da 401
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Errore connessione a IMPACT.'), backgroundColor: Colors.red),
+        );
+        Provider.of<TrainingProvider>(context, listen: false).changePermission(false);
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ManualEffortScreen()));
+      },
+      onDecline: () async {// utente schiaccia NO
+        Provider.of<TrainingProvider>(context, listen: false).changePermission(false); //aggiorno la variabile della sp e del provider
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ManualEffortScreen()));
+      }
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // SafeArea widget to avoid system UI overlaps
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Stack(
-          children: [Padding(
-            padding: const EdgeInsets.all(
-                16.0),
-            child: 
-            SingleChildScrollView(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                
-                // import the logo image from assets folder (make sure to add the folder in pubspec.yaml)
-                Image.asset(
-                  'assets/logo_smartstage.png',
-                  scale: 4,
-                  ),
-                const SizedBox(
-                      height: 30,
-                    ),
-                    
-                const Text(
-                  'Let\'s know you better',
-                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
-                ),
-                const SizedBox(
-                  height: 25,
-                ),
-                
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children:[
-                      TextFormField(
-                        controller: _nameController,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          labelText: 'Name',
-                          hintText: 'Enter your name',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your name';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(
-                        height: 20,
-                      ),
-                      
-                      TextFormField(
-                        controller: _surnameController,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          labelText: 'Surname',
-                          hintText: 'Enter your surname',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your surname';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(
-                        height: 20,
-                      ),
-
-                      DropdownButtonFormField<String>(
-                        decoration: InputDecoration(labelText: 'Sex', border: OutlineInputBorder()),
-                        value: _selectedGender,
-                        items: ['M', 'F', 'Other'].map((gender){
-                          return DropdownMenuItem<String>(
-                            value: gender,
-                            child: Text(gender),
-                          );
-                        }).toList(),
-                        onChanged: (value) => setState(() => _selectedGender = value),
-                        validator: (value) => value == null ? 'Choose gender' : null,
-                      ),
-                      const SizedBox(
-                        height: 20,
-                      ),
-
-                      TextFormField(
-                        controller: _dateController,
-                        readOnly: true,
-                        decoration: InputDecoration(labelText: 'Date of birth', border: OutlineInputBorder()),
-                        onTap: () => _selectDate(context),
-                        validator: (value) => value == null || value.isEmpty ? 'Pick a date' : null,
+        child: Column(
+          children: [
+            // PARTE CENTRALE: Le pagine che scorrono
+            Expanded( // Widget che prende tutto lo spazio disponibile, così il PageView occupa tutto lo spazio tra l'header e il footer
+              child: PageView.builder( // costruttore widget PageView (permette di scorrere tra più pagine)
+                controller: _pageController, //oggeto di PageController che permette di tenere conto di "dove" si trova l'utente nelle pagine
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (value) { // funzione chiamata ogni volta che lo scorrimento termina e la pagina cambia, value=indice della pagina diventata visibile
+                  // ogni volta che l'utente cambia pagina, aggiorno lo stato del widget con l'indice della pagina corrente
+                  setState(() {
+                    _currentPage = value; 
+                  });
+                }, 
+                itemCount: onboardingData.length, // numero di pagine 
+                itemBuilder: (context, index) { // costruttore di ogni pagine, dato l'indice
+                  return Padding(
+                    padding: const EdgeInsets.all(70.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start, // Allinea gli elementi partendo dall'alto
+                      children: [
                         
-                      ),
-                      
-                      SizedBox(height: 24),
+                        const SizedBox(height: 30), // Un piccolo margine superiore
 
-                      ElevatedButton(
-                        onPressed: _submitForm, // quando premo "Save", salvo i dati e mostro il pop-up per la sincronizzazione con IMPACT
-                        child: Text('Save'),
-                      ),
-                    ]),
-                ),   
-                ],
-                ),    
+                        // 1. TITOLO IN ALTO
+                        Text(
+                          onboardingData[index]["title"]!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 32, // Font size ingrandito (prima era 24)
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1B365D),
+                            height: 1.2, // Migliora la spaziatura tra le righe se il titolo va a capo
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 40),
+
+                        // 2. IMMAGINE CENTRALE   (Expanded= "prendi tutto lo spazio che rimane")
+                        Expanded(
+                          child: Center(
+                            child: Image.asset(
+                              onboardingData[index]["image"]!,
+                              fit: BoxFit.contain, // Mantiene le proporzioni rendendola il più grande possibile
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 40),
+
+                        // 3. TESTO DESCRITTIVO SOTTO L'IMMAGINE
+                        Text(
+                          onboardingData[index]["text"]!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
+                            height: 1.4,
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 30),
+                        
+                        // 4. TESTO in basso (Mostrato solo nella prima pagina)
+                        if (index == 0)
+                          TextField(
+                            controller: _nicknameController, // controller
+                            decoration: InputDecoration( // stile del campo di testo
+                              labelText: 'Come ti chiami?',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              prefixIcon: const Icon(Icons.person),
+                              // Opzionale: un hint se vuoi guidare l'utente
+                              hintText: 'Inserisci il tuo nickname',
+                            ),
+                          ),
+                          
+                        // Se non devo mostarare il TextField della prima pagina, aggiungo un margine inferiore per uniformità
+                        if (index != 0) const SizedBox(height: 30), 
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
+            
+            // PARTE INFERIORE: Pallini e Bottoni
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween, //allineo in modo che il primo widget sia a sinistra e l'ultimo a destra, e gli altri siano distribuiti uniformemente
+                children: [
 
-            Positioned(
-              bottom: 16,
-              right: 16,
-              child: TextButton(
-                onPressed: () async {
-                  // 1. Imposto onboarding_completed a true per saltare l'onboarding in futuro
-                  await _setOnboardingCompleted(); // imposto onboarding_completed a true per saltare l'onboarding in futuro
-                  // 2. Stampo il contenuto della SharedPreferences per debug
-                  await _showImpactPermissionDialog(context);
-                },
-                child: Text(
-                  'Skip',
-                  style: TextStyle(color: Theme.of(context).colorScheme.primary),
-                ),
+                  // Bottone SKIP (Mostrato solo se non siamo all'ultima pagina)
+                  _currentPage == onboardingData.length - 1
+                      ? const SizedBox(width: 50) // se siamo all'ultima pagina
+                      : TextButton(
+                        onPressed: () {
+                          // Se siamo sulla prima pagina e il testo è vuoto, fermati
+                          if (_currentPage == 0 && _nicknameController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Inserisci un nickname per continuare!')),
+                            );
+                            return; // non permette di saltare l'onboarding senza inserire il nickname
+                          }
+                          _finishOnboarding();
+                        },
+                        child: const Text('Skip', style: TextStyle(color: Colors.grey)),
+                      ),
+                  
+                  // PALLINI (Dots Indicator)
+                  Row(
+                    children: List.generate( // lista di pallini, uno per ogni pagina
+                      onboardingData.length,
+                      (index) => buildDot(index, context),
+                    ),
+                  ),
+
+                  // Bottone START / NEXT
+                  _currentPage == onboardingData.length - 1
+                      ? ElevatedButton( // se siamo all'ultima pagina, mostro il bottone "START"
+                          onPressed: _finishOnboarding, // Avvia la logica finale
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1B365D),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          ),
+                          child: const Text('START', style: TextStyle(color: Colors.white)),
+                        )
+                      : TextButton( // se non siamo all'ultima pagina, mostro il bottone "Next"
+                        onPressed: () {
+                          // Validazione manuale e diretta
+                          if (_currentPage == 0 && _nicknameController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Inserisci un nickname per continuare!')),
+                            );
+                            return; 
+                          }
+                          
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeIn,
+                          );
+                        },
+                        child: const Text('Next', style: TextStyle(color: Color(0xFF1B365D), fontWeight: FontWeight.bold)),
+                      ),
+                ],
               ),
-                  ),]
+            )
+          ],
         ),
-      ),);
+      ),
+    );
+  }
+
+  // Widget helper per disegnare i pallini
+  Container buildDot(int index, BuildContext context) {
+    return Container(
+      height: 10,
+      width: _currentPage == index ? 25 : 10, // Si allunga se è la pagina corrente
+      margin: const EdgeInsets.only(right: 5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: _currentPage == index ? const Color(0xFF1B365D) : Colors.grey.shade300,
+      ),
+    );
   }
 }
-
-
-
-

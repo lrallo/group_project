@@ -26,22 +26,22 @@ class Training {
     required this.activeDuration,
   });
 
-  factory Training.fromJson(String date, Map<String, dynamic> json) {
-    double parsedDistance = (json['distance'] as num?)?.toDouble() ?? 0.0;
+  factory Training.fromJson(String date, Map<String, dynamic> json) { // costruttore factory per creare un oggetto Training da una mappa JSON
+    double parsedDistance = (json['distance'] as num?)?.toDouble() ?? 0.0; // tenta di trattare il valore come num generico (int o double) (accettiamo che possa essere null) e lo convertiamo in double, altrimenti default 0.0
     int parsedSteps = json['steps'] as int? ?? 0;
-    double parsedActiveDuration = (json['activeDuration'] as num?)?.toDouble() ?? 0.0;
+    double parsedActiveDuration = (json['activeDuration'] as num?)?.toDouble() ?? 0.0; 
 
-    String actName = (json['activityName'] as String?)?.toLowerCase() ?? '';
+    String actName = (json['activityName'] as String?)?.toLowerCase() ?? '';// converte in minuscolo per confronti più facili, default stringa vuota se null
 
     // 1. Pulizia Corsa/Camminata: calcoliamo dai passi se la distanza è mancante
     if (parsedDistance == 0.0 && parsedSteps > 0) {
       parsedDistance = (parsedSteps * 0.762) / 1000.0; 
     }
 
-    // 2. Pulizia Bici (auto_detected): calcoliamo dal tempo stimando 20 km/h di media
+    // 2. Pulizia Bici (auto_detected): calcoliamo dal tempo stimando 25 km/h di media
     if (parsedDistance == 0.0 && (actName.contains('bici') || actName.contains('bike')) && parsedActiveDuration > 0) {
        // activeDuration è in millisecondi. In ore: ms / 3600000
-       parsedDistance = (parsedActiveDuration / 3600000.0) * 20.0;
+       parsedDistance = (parsedActiveDuration / 3600000.0) * 25.0;
     }
 
     return Training(

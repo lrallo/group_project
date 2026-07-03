@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:project_app/screens/HomePage.dart';
+import 'package:provider/provider.dart';
+import 'package:project_app/providers/TrainingProvider.dart';
 
 class ManualEffortScreen extends StatefulWidget {
   const ManualEffortScreen({Key? key}) : super(key: key);
@@ -15,23 +17,22 @@ class _ManualEffortScreenState extends State<ManualEffortScreen> {
   final TextEditingController _bikeController = TextEditingController();
 
   Future<void> _saveAndContinue() async {
-    if (_formKey.currentState!.validate()) {
-      final sp = await SharedPreferences.getInstance();
+    if (_formKey.currentState!.validate()) { //se i dati sono validi, procedo a salvarli
+      double walkValue = double.parse(_walkController.text); // Converto il testo in double
+      double bikeValue = double.parse(_bikeController.text);
       
-      // Salviamo i dati inseriti dall'utente
-      await sp.setDouble('maxWalkEffortKm', double.parse(_walkController.text));
-      await sp.setDouble('maxBikeEffortKm', double.parse(_bikeController.text));
-      
-      // Ora l'onboarding è completato definitivamente
-      await sp.setBool('onboarding_completed', true);
+    // 1. Chiamo il provider che salva su sp e aggiorna lo stato
+    await Provider.of<TrainingProvider>(context, listen: false)
+          .setManualMetrics(walkValue, bikeValue);
+          
 
-      if (!mounted) return;
-      
-      // Andiamo alla HomePage
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
+    if (!mounted) return;
+    
+    // 3. Vai alla HomePage
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomePage()),
+    );
     }
   }
 

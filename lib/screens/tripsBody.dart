@@ -232,12 +232,9 @@ class _TripsbodyState extends State<Tripsbody> {
 
   // Metodo helper per creare le singole card dei viaggi
   Widget _buildTripCard(BuildContext context, Trip trip) {
-    // Formattiamo il sottotitolo usando i dati calcolati
-    String formattedSubtitle = "${trip.distance.toStringAsFixed(0)}km | +${trip.elevationPos.toStringAsFixed(0)}m";
-    // Scegliamo un'iconina da mostrare al posto del paesaggio in base all'attività
+    String formattedSubtitle = "${trip.distance.toStringAsFixed(0)}km | +${trip.elevationPos.toStringAsFixed(0)}m"; // Formatta il sottotitolo con la distanza e il dislivello
     IconData activityIcon = trip.activity == 'bike' ? Icons.directions_bike : Icons.directions_walk;
-
-    // formattazione DATA e ORA //
+    // Formattiamo la data di importazione in un formato leggibile
     String day = trip.importDate.day.toString().padLeft(2, '0');
     String month = trip.importDate.month.toString().padLeft(2, '0');
     String year = trip.importDate.year.toString();
@@ -245,20 +242,17 @@ class _TripsbodyState extends State<Tripsbody> {
     String minute = trip.importDate.minute.toString().padLeft(2, '0');
     String displayDate = "$day/$month/$year - $hour:$minute";
 
-    return GestureDetector(
+    return GestureDetector( 
       onTap: () {
-        // QUANDO CLICCHI LA CARD, NAVIGA ALLA SCHERMATA DELLE TAPPE (Telefono 3)
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => TripStagesScreen(
-              indexTrips: Provider.of<TripProvider>(context, listen: false).tripList.indexOf(trip) // passiamo anche l'indice del viaggio selezionato, così nella schermata delle tappe possiamo accedere alla lista delle tappe di quel viaggio nel provider
-              
-              ), // 
+              indexTrips: Provider.of<TripProvider>(context, listen: false).tripList.indexOf(trip)
+            ),
           ),
         );
       },
-
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
         padding: const EdgeInsets.all(15),
@@ -277,52 +271,123 @@ class _TripsbodyState extends State<Tripsbody> {
         child: Row( 
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded( // Usiamo Expanded per evitare overflow del testo se il nome è lungo
+            // --- PARTE SINISTRA: Testi ---
+            Expanded( 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    trip.title, // Usa il nome reale del file/viaggio
+                    trip.title, 
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
-                    overflow: TextOverflow.ellipsis, // Se è troppo lungo mette "..."
+                    overflow: TextOverflow.ellipsis, 
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    formattedSubtitle, // Usa distanza e dislivello reali
+                    formattedSubtitle, 
                     style: const TextStyle(
                       fontSize: 14,
                       color: Colors.grey,
                     ),
                   ),
                   const SizedBox(height: 5),
-                  // --- NUOVO TEXT WIDGET PER LA DATA ---
                   Text(
                     'Caricato il: $displayDate',
                     style: TextStyle(
-                      fontSize: 11, // Molto piccolo per non disturbare
-                      color: Colors.grey[400], // Colore molto tenue per essere elegante
+                      fontSize: 11, 
+                      color: Colors.grey[400], 
                       fontStyle: FontStyle.italic,
                     ),
                   ),
                 ],
               ),
             ),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: 60,
-                height: 60,
-                color: trip.activity == 'bike' ? const Color(0xFF4A7C59).withOpacity(0.2) : Colors.orange.withOpacity(0.2),
-                child: Icon(activityIcon, color: trip.activity == 'bike' ? const Color(0xFF4A7C59) : Colors.orange),
-              ),
+            
+            // --- PARTE DESTRA: Icona Attività (Grande) + Cestino (Piccolo e Grigio) ---
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 1. Icona Attività (Walk/Bike) - PIÙ GRANDE E IN RISALTO
+                Container(
+                  width: 55,  // Dimensione aumentata
+                  height: 55, // Dimensione aumentata
+                  decoration: BoxDecoration(
+                    color: trip.activity == 'bike' 
+                        ? const Color(0xFF4A7C59).withOpacity(0.15) 
+                        : Colors.orange.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(14), // Bordi più morbidi
+                  ),
+                  child: Icon(
+                    activityIcon, 
+                    size: 32, // Icona più grande
+                    color: trip.activity == 'bike' ? const Color(0xFF4A7C59) : Colors.orange,
+                  ),
+                ),
+                
+                const SizedBox(width: 10), // Spazio tra i due elementi
+                
+                // 2. Bottone Cestino - PIÙ PICCOLO E DISCRETO
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () {
+                      // Mostriamo il Pop-up di conferma prima di eliminare
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Elimina viaggio'),
+                          content: Text('Sei sicuro di voler eliminare "${trip.title}"?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('ANNULLA', style: TextStyle(color: Colors.grey)),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.redAccent,
+                                elevation: 0,
+                              ),
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                Provider.of<TripProvider>(context, listen: false).removeTrip(trip);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Viaggio eliminato'),
+                                    backgroundColor: Colors.redAccent,
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                              child: const Text('ELIMINA', style: TextStyle(color: Colors.white)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 35,  // Dimensione ridotta
+                      height: 35, // Dimensione ridotta
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withOpacity(0.15), // Sfondo grigio opaco/tenue
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline, 
+                        color: Colors.grey, // Icona grigia
+                        size: 20, // Icona più piccola
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             )
           ],
         ),
       ),
-    );
+      );
   }
 }
