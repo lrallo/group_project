@@ -31,11 +31,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _hasImpactPermission = sp.getBool('impact_permission') ?? false; //gli do la variabile salvata nella sp durante il login
       
       // Pre-compiliamo i campi con i valori attuali salvati in memoria
-      double walk = sp.getDouble('maxWalk') ?? 15.0; // NOTA: uso la chiave 'maxWalk' allineata col Provider
-      double bike = sp.getDouble('maxBike') ?? 50.0; // NOTA: uso la chiave 'maxBike' allineata col Provider
+      double walk = sp.getDouble('maxWalk') ?? 15.0; 
+      double bike = sp.getDouble('maxBike') ?? 50.0; 
       
-      _walkController.text = walk.toString();
-      _bikeController.text = bike.toString();
+      _walkController.text = walk.toStringAsFixed(1);
+      _bikeController.text = bike.toStringAsFixed(1);
       
       _isLoading = false; 
     });
@@ -49,7 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (walkValue == null || bikeValue == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Inserisci dei numeri validi per i chilometri!'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Please enter valid numbers for the kilometers!'), backgroundColor: Colors.red),
       );
       return; 
     }
@@ -59,7 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Metriche manuali aggiornate!'), backgroundColor: Colors.green),
+      const SnackBar(content: Text('Manual metrics updated!'), backgroundColor: Colors.green),
     );
   }
 
@@ -81,20 +81,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             setState(() { _hasImpactPermission = true; });
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Dati IMPACT sincronizzati!'), backgroundColor: Colors.green),
+              const SnackBar(content: Text('Fitness tracker data fetched successfully!'), backgroundColor: Colors.green),
             );
           } else {
             // Se fallisce, rimettiamo a false per sicurezza
             await Provider.of<TrainingProvider>(context, listen: false).changePermission(false);
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Errore di connessione a IMPACT.'), backgroundColor: Colors.red),
+              const SnackBar(content: Text('Error syncing fitness tracker. Please try again.'), backgroundColor: Colors.red),
             );
           }
         },
         onError: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Errore di connessione a IMPACT.'), backgroundColor: Colors.red),
+            const SnackBar(content: Text('Error syncing data. Please try again.'), backgroundColor: Colors.red),
           );
         },
         onDecline: () {}
@@ -109,7 +109,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await Provider.of<TrainingProvider>(context, listen: false).switchToManual(); //tolgo le metriche che non servono più e aggiorno la variabile del provider
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('IMPACT scollegato. Inserisci le metriche manualmente.'), backgroundColor: Colors.orange),
+        const SnackBar(content: Text('Fitness tracker disconnected. Please enter metrics manually.'), backgroundColor: Colors.orange),
       );
     }
   }
@@ -120,7 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Impostazioni App', style: TextStyle(color: Color(0xFF1B365D), fontWeight: FontWeight.bold)),
+        title: const Text('Settings', style: TextStyle(color: Color(0xFF1B365D), fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Color(0xFF1B365D)),
@@ -133,7 +133,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Sincronizzazione IMPACT", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black54)),
+                  const Text("Fitness Tracker Connection", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black54)),
                   const SizedBox(height: 15),
                   
                   Container(
@@ -143,8 +143,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
 
                     child: SwitchListTile( // widget che unisce un interrutore switch e un titolo con sottotitolo
-                      title: const Text('Collega server IMPACT', style: TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: const Text('Calcola automaticamente il tuo livello in base agli allenamenti passati.'),
+                      title: const Text('Link Fitness Tracker', style: TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Automatically calculate your level based on your fitness tracker history.'),
                       activeColor: const Color(0xFF1B365D),
                       value: _hasImpactPermission,  // stato attuale dell'iterrutore
                       onChanged: _toggleImpactPermission, //funzione runnata quando l'utente tocca l'interrutore
@@ -154,10 +154,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   // il pulsante è in OFF
                   if (!_hasImpactPermission) ...[
                     const SizedBox(height: 40),
-                    const Text("Parametri Sforzo Manuale", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black54)),
+                    const Text("Set Your Daily Limits", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black54)),
                     const SizedBox(height: 10),
                     const Text(
-                      'Imposta i tuoi limiti di chilometri giornalieri. Verranno usati per dividere le tappe.',
+                      'Set the maximum distance you feel comfortable covering each day. We\'ll use these limits to split your routes into perfect stages.',
                       style: TextStyle(fontSize: 14, color: Colors.blueGrey),
                     ),
                     const SizedBox(height: 20),
@@ -166,7 +166,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       controller: _walkController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        labelText: 'Sforzo Massimo a Piedi (Km)',
+                        labelText: 'Max daily walking distance (km)',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         prefixIcon: const Icon(Icons.directions_walk),
                       ),
@@ -176,7 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       controller: _bikeController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        labelText: 'Sforzo Massimo in Bici (Km)',
+                        labelText: 'Max daily cycling distance (km)',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         prefixIcon: const Icon(Icons.directions_bike),
                       ),
@@ -192,7 +192,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         onPressed: _saveManualSettings, // Salva i dati tramite il Provider
                         icon: const Icon(Icons.save, color: Colors.white),
-                        label: const Text('SALVA METRICHE MANUALI', style: TextStyle(color: Colors.white, fontSize: 16)),
+                        label: const Text('SAVE MANUAL METRICS', style: TextStyle(color: Colors.white, fontSize: 16)),
                       ),
                     ),
                   ],

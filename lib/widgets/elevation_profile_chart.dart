@@ -65,7 +65,7 @@ class ElevationProfileChart extends StatelessWidget {
             handleBuiltInTouches: true, // Gestisce in automatico il drag del dito
             touchTooltipData: LineTouchTooltipData(
               // Puoi cambiare lo sfondo del quadratino che appare al tocco
-              getTooltipColor: (LineBarSpot touchedSpot) => const Color(0xFF1B3B5A).withOpacity(0.9),
+              getTooltipColor: (LineBarSpot touchedSpot) => const Color(0xFF1B365D).withOpacity(0.9),
               tooltipRoundedRadius: 8,
               getTooltipItems: (List<LineBarSpot> touchedSpots) {
                 return touchedSpots.map((touchedSpot) {
@@ -99,7 +99,7 @@ class ElevationProfileChart extends StatelessWidget {
                     show: true, // Mostra un pallino sulla linea altimetrica dove si trova il dito
                     getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
                       radius: 6,
-                      color: const Color(0xFF1B3B5A),
+                      color: const Color(0xFF1B365D),
                       strokeWidth: 2,
                       strokeColor: Colors.white,
                     ),

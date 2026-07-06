@@ -26,18 +26,35 @@ class Splash extends StatelessWidget {
     final result = await ImpactService.refreshTokens(); // provo a fare il refresh
 
 
-    if (result == 200) { // se il refresh token NON è scaduto, l'utente avevafatto il login meno di 24h fa
-      // carico le metriche dalla sp al provider
+    if (result == 200) { // CASO 1: ONLINE E LOGIN < 24h fa: Andiamo in HomePage caricando i dati
+      
       await Provider.of<TrainingProvider>(context, listen: false).loadLocalMetrics(); 
       if (!context.mounted) return;
-      Navigator.of(context)
-        .pushReplacement(MaterialPageRoute(builder: (context) => const HomePage()));
-     
-    } else {            // se il refresh token è scaduto (utente aveva fatto il login da + di 24h), o non c'è (l'utente non ha mai fato login), richiedi le credenziali, per chiedere nuovi token
-      Navigator.of(context) 
-        .pushReplacement(MaterialPageRoute(builder: ((context) => LoginPage())));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomePage()));
+      
+    } else if (result == 401) { // CASO 2: ONLINE ma MAI LOGGATO O LOGIN > 24h fa: Andiamo in LoginPage
+      if (!context.mounted) return;
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: ((context) => LoginPage())));
+    
+
+    } else { // CASO 3: OFFLINE ma utente già loggato
+      // 1. carico le metriche dalla sp
+      await Provider.of<TrainingProvider>(context, listen: false).loadLocalMetrics();
+      if (!context.mounted) return;
+      // 2. avviso l'utente che è offline e che i dati non sono aggiornati
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('WARNING: Couldn\'t sync latest fitness tracker data. Go to Settings to manually update metrics.'),
+          backgroundColor: Color.fromARGB(255, 255, 0, 0),
+          duration: Duration(seconds: 5),
+        ),
+      );
+      // 3. reindirizzo alla HomePage, anche se i dati non sono aggiornati
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomePage()));
+      
+      
     }
-  } //_checkLogin
+  }
 
 }
 

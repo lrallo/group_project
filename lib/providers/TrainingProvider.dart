@@ -25,11 +25,12 @@ class TrainingProvider extends ChangeNotifier {
 }
 
 
+
 // metodo che CARICA LE VECCHIE METRICHE se l'utente ha fatto il login meno di 24h fa (da usare in splash)
 Future<void> loadLocalMetrics() async {
   // 1. accedo alla sp
   final sp = await SharedPreferences.getInstance();
-  impactPermission = sp.getBool('impact_permission') ?? false; 
+  impactPermission = sp.getBool('impact_permission') ?? false; // assegno alla variabile del provider il valore salvato nella sp, se non c'è lo imposto a false
   
   double? walk = sp.getDouble('maxWalk');
   double? bike = sp.getDouble('maxBike');
@@ -119,39 +120,24 @@ Future<void> loadLocalMetrics() async {
   
 
   // funzione che SE l'utente aveva dato il consenso a IMPACT, elimina le vecchie metriche dalla sp e richiama getTrainingData 
-  Future<int> updateImpactMetrics() async {
+  Future<int> updateMetrics() async {
     final sp = await SharedPreferences.getInstance();
     bool? permission = sp.getBool('impact_permission'); // carico il permesso che era stato salvato
 
     if (permission == true){ // UTENTE AVEVA DATO IL PERMESSO A IMPACT
-      changePermission(true); //aggiorno la variabile del provider
+      // 1. aggiorno anche la variabile del provider
+      impactPermission = true; // aggiorno la variabile del provider
 
-      // 1. Pulisco le chiavi relative a IMPACT in modo che non creino conflitti
-      await sp.remove('maxWalk');
-      await sp.remove('maxBike');
-      await sp.remove('analysisWindow');
-      await sp.remove('activeDays');
-      await sp.remove('dailyWalkMap');
-      await sp.remove('dailyBikeMap');
-
-      // 2. recupero i dati e riaggiorno la SP
+      // 2. recupero i dati e sovrascrivo la SP
       int status = await getTrainingData();
+
       notifyListeners();
       return status;
 
     } else if (permission==false){ // UTENTE NON AVEVA DATO IL PERMESSO, mantengo i dati che ci sono e gli carico nel provider
       // carico i dati dalla sp al provider
-      changePermission(false); // aggiorno la variabile del provider
-      double? walk = sp.getDouble('maxWalk');
-      double? bike = sp.getDouble('maxBike');
-      if (walk != null && bike != null) {
-        userMetrics = PerformanceMetrics(
-          maxWalkEffortKm: walk,
-          maxBikeEffortKm: bike,
-          // gli altri campi saranno null
-        );
-        notifyListeners();
-      }
+      await loadLocalMetrics(); // carico i dati dalla sp al provider
+      notifyListeners();
       return 200; 
     }else{
       print('errore critico in updateImpactMetrics');
@@ -163,50 +149,43 @@ Future<void> loadLocalMetrics() async {
 
   // metodo per quando l'utente toglie il permesso a IMPACT
   Future<void> switchToManual() async {
+
+  // 1. Aggiorno la variabile del provider e della sp
+  await changePermission(false); // Aggiorno la variabile del provider e della sp
+
+  // 2. Recuperiamo i vecchi dati manuali salvati (o usiamo un default di sicurezza)
   final sp = await SharedPreferences.getInstance();
-  
-  impactPermission = false;// Impostiamo il permesso a false
-  await sp.setBool('impact_permission', false);
+  double rawWalk = sp.getDouble('maxWalk') ?? 15.0;
+  double rawBike = sp.getDouble('maxBike') ?? 50.0;
+  // teniamo solo 2 cifre dopo la virgola
+  double walk = double.parse(rawWalk.toStringAsFixed(1));
+  double bike = double.parse(rawBike.toStringAsFixed(1));
 
-  // Recuperiamo i vecchi dati manuali salvati (o usiamo un default di sicurezza)
-  double walk = sp.getDouble('maxWalk') ?? 15.0;
-  double bike = sp.getDouble('maxBike') ?? 50.0;
-
-  // Puliamo solo i dati specifici di IMPACT per non salvare dati in piu
+  // 3. Puliamo solo i dati specifici di IMPACT per non salvare dati in piu
   await sp.remove('analysisWindow');
   await sp.remove('activeDays');
   await sp.remove('dailyWalkMap');
   await sp.remove('dailyBikeMap');
 
-  // Ricreiamo l'oggetto metrics con i soli dati manuali
+  // 4. Ricreo l'oggetto metrics con i soli dati manuali
   userMetrics = PerformanceMetrics(
     maxWalkEffortKm: walk,
     maxBikeEffortKm: bike,
   );
-
   notifyListeners(); // La UI passerà istantaneamente ai box manuali compilati!
 }
 
-  // Funzione per DATI MANUALI  
+
+  // Funzione per DATI MANUALI  (usata in settings_screen e manual_effort_screen)
 Future<void> setManualMetrics(double walkLimit, double bikeLimit) async {
     final sp = await SharedPreferences.getInstance();
+    // n.b. non serve cancellare le chiavi sulla sp, perchè vengono cancellate quando l'utente schiaccia il pulsante "switch ""
     
-    // 1. Pulisco i dati precedenti
-    // (n.b. se la chiave non esiste, non da errore, semplicemente non fa nulla)
-    await sp.remove('analysisWindow');
-    await sp.remove('activeDays');
-    await sp.remove('dailyWalkMap');
-    await sp.remove('dailyBikeMap');
-    
-    // 2. Salvo i nuovi dati 
+    // 1. Sovrascrivo i nuovi dati 
     await sp.setDouble('maxWalk', walkLimit); 
     await sp.setDouble('maxBike', bikeLimit);
 
-    // 3. aggiorno la variabile del permesso
-    await sp.setBool('impact_permission', false);
-
-    // 3. Aggiorno lo stato del Provider
-    impactPermission = false;
+    // 2. sovrascrivo i dati nel provider
     userMetrics = PerformanceMetrics(
       maxWalkEffortKm: walkLimit,
       maxBikeEffortKm: bikeLimit,
@@ -217,17 +196,15 @@ Future<void> setManualMetrics(double walkLimit, double bikeLimit) async {
       dailyWalkEffort: null,  
       dailyBikeEffort: null,
     );
-
     notifyListeners(); // La UI (TrainingBody) cambierà istantaneamente!
   }
 
-  // PULIZIA DEI DATI DEL PROVIDER (es. quando l'utente fa logout)
-  // n.b. la usiamo mai questa funzione ??
-    void clearData() {
+
+  // PULIZIA DEI DATI DEL PROVIDER 
+    Future<void> clearTrainingProvider() async {
     userMetrics = null;
     _isLoading = false;
     impactPermission = false;
-   
     notifyListeners();//avviso che lo stato di caricamento è cambiato, così la UI può aggiornarsi
   }
 }

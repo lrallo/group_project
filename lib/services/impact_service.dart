@@ -20,25 +20,28 @@ class ImpactService{
 
 
   static Future<int> getAndStoreTokens(String username, String password ) async {
-
-    //Create the request
     final url = ImpactService.baseUrl + ImpactService.tokenEndpoint;
     final body = {'username': username, 'password': password};
 
-    //Get the response
-    print('Calling: $url');
-    final response = await http.post(Uri.parse(url), body: body);
+    try {
+      //Get the response
+      print('Calling: $url');
+      final response = await http.post(Uri.parse(url), body: body);
 
-    //If response is OK, decode it and store the tokens. Otherwise do nothing.
-    if (response.statusCode == 200) {
-      final decodedResponse = jsonDecode(response.body);
-      final sp = await SharedPreferences.getInstance();
-      await sp.setString('access', decodedResponse['access']);
-      await sp.setString('refresh', decodedResponse['refresh']);
-    } //if
+      //If response is OK, decode it and store the tokens. Otherwise do nothing.
+      if (response.statusCode == 200) {
+        final decodedResponse = jsonDecode(response.body);
+        final sp = await SharedPreferences.getInstance();
+        await sp.setString('access', decodedResponse['access']);
+        await sp.setString('refresh', decodedResponse['refresh']);
+      } 
+      
+      return response.statusCode;
 
-    //Just return the status code
-    return response.statusCode;
+    } catch (e) { // SE NON C'È CONNESSIONE A INTERNET O IL SERVER IMPACT NON È RAGGIUNGIBILE
+      print('Network Error in getAndStoreTokens (Offline): $e');
+      return 500; 
+    }
   } //_getAndStoreTokens
   
   
@@ -50,29 +53,32 @@ class ImpactService{
     final sp = await SharedPreferences.getInstance();
     final refresh = sp.getString('refresh');
 
-    if (refresh != null) {
-      final body = {'refresh': refresh};
+    
+    if (refresh == null) { //  utente mai loggato o ha fatto logout
+      return 401; 
+    }
 
-      // 1. Get the response
-      print('Calling: $url');
+    try { //c'è connessione a internet
+      final body = {'refresh': refresh};
       final response = await http.post(Uri.parse(url), body: body);
 
-      //If the response is OK, set the tokens in SharedPreferences to the new values
-      if (response.statusCode == 200) {
-        // 2. Decode the response and store the new tokens in SharedPreferences
+      if (response.statusCode == 200) { // token valido (Login < 24h fa), Access Token aggiornato con successo
+        // Token valido (< 24h) aggiornato con successo
         final decodedResponse = jsonDecode(response.body);
-        final sp = await SharedPreferences.getInstance();
         await sp.setString('access', decodedResponse['access']);
         await sp.setString('refresh', decodedResponse['refresh']);
-      } else { //se il refresh token è scaduto
-        // If the refresh token is invalid or expired, we should remove the stored tokens to force the user to log in again
+        return 200; 
+      } else { // Token scaduto (Login > 24h) 
         await sp.remove('access');
         await sp.remove('refresh');
-        return response.statusCode;
-      }// if
-      return response.statusCode; 
+        return 401; 
+      }
+    } catch (e) { //nessuna connessione a internet o server IMPACT non raggiungibile
+      
+      print('Network Error (Offline): $e');
+      return 500; 
     }
-    return 401; // se non c'era alcun refresh token salvato
+    
   } //_refreshTokens
 
 

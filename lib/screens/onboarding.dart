@@ -30,8 +30,8 @@ class _OnboardingState extends State<Onboarding> {
       "image": "assets/onboarding_1.jpg" // Sostituisci con le tue illustrazioni
     },
     {
-      "title": "KNOW YOUR LEVEL",
-      "text": "Connect your training data or input your daily effort to get personalized stage recommendations.",
+      "title": "CONNECT FITNESS TRACKER",
+      "text": "Sync your fitness tracker or input your daily effort manually to get personalized stage recommendations.",
       "image": "assets/onboarding_2.jpg"
     },
     {
@@ -56,19 +56,20 @@ class _OnboardingState extends State<Onboarding> {
     if (!mounted) return; //se !mounted è true, significa che l'utente ha chiuso la pagina di onboarding prima che la funzione finisse, 
     // dico a flutter di non fare più setState o navigazioni, altrimenti crasha l'app
 
-    // imposto already_logged come true
-    await sp.setBool('already_logged', true);
     
     // 2. Apro il dialog per chiedere il permesso di accedere ai dati IMPACT
     await showImpactPermissionDialog(
       context: context,
       onSuccess: () async { //utente schiaccia SI e .getTrainignData da 200
+        
+        await sp.setBool('already_logged', true); // imposto already_logged come true
         Provider.of<TrainingProvider>(context, listen: false).changePermission(true);// aggiorno variabile della sp e del provider
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
       },
       onError: () async { //utente schiaccia SI ma .getTrainignData un errore diverso da 401
+  
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Errore connessione a IMPACT.'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('Error syncing data. Please try again.'), backgroundColor: Colors.red),
         );
         Provider.of<TrainingProvider>(context, listen: false).changePermission(false);
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ManualEffortScreen()));
@@ -152,13 +153,13 @@ class _OnboardingState extends State<Onboarding> {
                           TextField(
                             controller: _nicknameController, // controller
                             decoration: InputDecoration( // stile del campo di testo
-                              labelText: 'Come ti chiami?',
+                              labelText: 'What\'s your nickname?', // Etichetta del campo
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               prefixIcon: const Icon(Icons.person),
                               // Opzionale: un hint se vuoi guidare l'utente
-                              hintText: 'Inserisci il tuo nickname',
+                              hintText: 'Enter your nickname',
                             ),
                           ),
                           
@@ -186,7 +187,7 @@ class _OnboardingState extends State<Onboarding> {
                           // Se siamo sulla prima pagina e il testo è vuoto, fermati
                           if (_currentPage == 0 && _nicknameController.text.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Inserisci un nickname per continuare!')),
+                              const SnackBar(content: Text('Enter a nickname to continue!')),
                             );
                             return; // non permette di saltare l'onboarding senza inserire il nickname
                           }
@@ -209,7 +210,7 @@ class _OnboardingState extends State<Onboarding> {
                           onPressed: _finishOnboarding, // Avvia la logica finale
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1B365D),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: const Text('START', style: TextStyle(color: Colors.white)),
                         )
@@ -218,7 +219,7 @@ class _OnboardingState extends State<Onboarding> {
                           // Validazione manuale e diretta
                           if (_currentPage == 0 && _nicknameController.text.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Inserisci un nickname per continuare!')),
+                              const SnackBar(content: Text('Enter a nickname to continue!')),
                             );
                             return; 
                           }

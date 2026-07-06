@@ -17,8 +17,8 @@ class TripStagesScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('PIANIFICAZIONE TAPPE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF1B3B5A),
+        title: const Text('TRIP PLANNING', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFF1B365D),
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -41,11 +41,11 @@ class TripStagesScreen extends StatelessWidget {
                         TextEditingController titleController = TextEditingController(text: trip.title);
 
                         return AlertDialog(
-                          title: const Text('Modifica Titolo Viaggio', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          title: const Text('Edit Trip Title', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                           content: TextField(
                             controller: titleController,
                             decoration: const InputDecoration(
-                              hintText: 'Inserisci il nuovo titolo',
+                              hintText: 'Enter the new title',
                               border: OutlineInputBorder(),
                             ),
                           ),
@@ -53,11 +53,11 @@ class TripStagesScreen extends StatelessWidget {
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(contextDialog), // Chiudi senza salvare
-                              child: const Text('ANNULLA', style: TextStyle(color: Colors.grey)),
+                              child: const Text('CANCEL', style: TextStyle(color: Colors.grey)),
                             ),
                             // -- pulsante SALVA -- //
                             ElevatedButton(
-                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1B3B5A)),
+                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1B365D)),
                               onPressed: () async {
                                 // metodo del provider per aggiornare il titolo e chiamare notifyListeners() 
                                 tripProvider.updateTripTitle(
@@ -67,7 +67,7 @@ class TripStagesScreen extends StatelessWidget {
                                 
                                 Navigator.pop(contextDialog); // Chiudi il pop-up
                               },
-                              child: const Text('SALVA', style: TextStyle(color: Colors.white)),
+                              child: const Text('SAVE', style: TextStyle(color: Colors.white)),
                             ),
                           ],
                         );
@@ -76,7 +76,7 @@ class TripStagesScreen extends StatelessWidget {
                   },// onTap
                   child: Container(
                     width: double.infinity,
-                    color: const Color(0xFF1B3B5A),
+                    color: const Color(0xFF1B365D),
                     padding: const EdgeInsets.only(bottom: 20, top: 10),
                     child: Column(
                       children: [
@@ -144,16 +144,16 @@ class TripStagesScreen extends StatelessWidget {
                             color: isSelected ? Colors.blue[50] : Colors.white, //colore sfondo leggermente diverso se la tappa è selezionata
                             elevation: isSelected ? 4 : 1, // Più ombra se selezionata
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
+                              borderRadius: BorderRadius.circular(12),
                               side: isSelected 
-                                  ? const BorderSide(color: Color(0xFF1B3B5A), width: 2) // Bordo scuro se selezionata
+                                  ? const BorderSide(color: Color(0xFF1B365D), width: 2) // Bordo scuro se selezionata
                                   : BorderSide.none, // se non è selezionata, nessun bordo
                             ),
                               child: Container(
                                 padding: const EdgeInsets.all(15),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.grey.withOpacity(0.1),
@@ -169,7 +169,7 @@ class TripStagesScreen extends StatelessWidget {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'GIORNO ${indexStages + 1}:',
+                                          'DAY ${indexStages + 1}:',
                                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                         ),
                                         const SizedBox(height: 5),
@@ -184,7 +184,7 @@ class TripStagesScreen extends StatelessWidget {
                                     IconButton(
                                       icon: const Icon(
                                         Icons.download_rounded, // Icona di download
-                                        color: Color(0xFF1B3B5A),
+                                        color: Color(0xFF1B365D),
                                         size: 28,
                                       ),
                                       onPressed: () async {
@@ -194,7 +194,7 @@ class TripStagesScreen extends StatelessWidget {
                                         // Mostra un feedback visivo all'utente
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
-                                            content: Text('Esportazione di ${stage.title} avviata!'),
+                                            content: Text('Export of ${stage.title} started!'),
                                             duration: const Duration(seconds: 2),
                                           ),
                                         );
@@ -231,10 +231,10 @@ class TripStagesScreen extends StatelessWidget {
                           },
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 15),
-                            side: const BorderSide(color: Color(0xFF1B3B5A)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            side: const BorderSide(color: Color(0xFF1B365D)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          child: const Text('ESPORTA TAPPE', style: TextStyle(color: Color(0xFF1B3B5A))),
+                          child: const Text('EXPORT STAGES', style: TextStyle(color: Color(0xFF1B365D))),
                         ),
                       ),
                       const SizedBox(width: 15),
@@ -245,11 +245,11 @@ class TripStagesScreen extends StatelessWidget {
                             Navigator.pop(context); // Torna indietro alla home
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1B3B5A),
+                            backgroundColor: const Color(0xFF1B365D),
                             padding: const EdgeInsets.symmetric(vertical: 15),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          child: const Text('CHIUDI', style: TextStyle(color: Colors.white)),
+                          child: const Text('CLOSE', style: TextStyle(color: Colors.white)),
                         ),
                       ),
                     ],

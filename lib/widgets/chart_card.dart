@@ -1,4 +1,5 @@
 // file: lib/widgets/chart_card.dart
+// file: lib/widgets/chart_card.dart
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -16,9 +17,28 @@ class ChartCard extends StatelessWidget {
     required this.barColor,
   });
 
+  // NUOVA FUNZIONE: Crea l'intestazione con l'icona nel riquadro colorato
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        // Riquadro pastello per l'icona (stile uniformato con TrainingBody)
+        Container(
+          padding: const EdgeInsets.all(8), // Spazio interno tra l'icona e il bordo del riquadro
+          decoration: BoxDecoration(
+            color: barColor.withOpacity(0.15), // Usa il colore specifico (arancione o verde)
+            borderRadius: BorderRadius.circular(10), // Angoli arrotondati
+          ),
+          child: Icon(icon, color: barColor, size: 20), // Icona colorata
+        ),
+        const SizedBox(width: 12),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Se non ci sono dati, mostriamo un messaggio vuoto
+    // Caso 1: Se non ci sono dati, mostriamo un messaggio vuoto
     if (dataMap == null || dataMap!.isEmpty) {
       return Card(
         elevation: 4,
@@ -26,23 +46,20 @@ class ChartCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Icon(icon, color: const Color(0xFF1B365D)),
-                  const SizedBox(width: 10),
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
+              _buildHeader(), // Inseriamo la nuova intestazione
               const SizedBox(height: 30),
-              const Text("Nessuna attività registrata in questo periodo.", style: TextStyle(color: Colors.grey)),
+              const Center(
+                child: Text("Nessuna attività registrata in questo periodo.", style: TextStyle(color: Colors.grey))
+              ),
             ],
           ),
         ),
       );
     }
 
-    // Ordino cronologicamente le date
+    // Caso 2: Abbiamo dati. Ordino cronologicamente le date
     List<String> sortedDates = dataMap!.keys.toList()..sort();
     
     // Genero i dati per le barre
@@ -79,14 +96,9 @@ class ChartCard extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Row(
-              children: [
-                Icon(icon, color: const Color(0xFF1B365D)),
-                const SizedBox(width: 10),
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
+            _buildHeader(), // Inseriamo la nuova intestazione anche qui
             const SizedBox(height: 30),
+            
             SizedBox(
               height: 200, 
               width: double.infinity,

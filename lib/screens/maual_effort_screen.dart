@@ -21,10 +21,16 @@ class _ManualEffortScreenState extends State<ManualEffortScreen> {
       double walkValue = double.parse(_walkController.text); // Converto il testo in double
       double bikeValue = double.parse(_bikeController.text);
       
-    // 1. Chiamo il provider che salva su sp e aggiorna lo stato
+    // 1. Chiamo il provider che salva le metriche su sp e provider
     await Provider.of<TrainingProvider>(context, listen: false)
           .setManualMetrics(walkValue, bikeValue);
-          
+    // 2. Imposto il permesso a false nel provider e nella sp
+    await Provider.of<TrainingProvider>(context, listen: false)
+          .changePermission(false); // Imposto il permesso a false
+    
+    // 3. Imposto already_logged come true nella sp
+    final sp = await SharedPreferences.getInstance();
+    await sp.setBool('already_logged', true);
 
     if (!mounted) return;
     
@@ -54,7 +60,7 @@ class _ManualEffortScreenState extends State<ManualEffortScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Poiché non hai collegato IMPACT, inserisci i tuoi parametri di sforzo massimo per personalizzare l\'app:',
+                    'Set the maximum distance you feel comfortable covering each day. We\'ll use these limits to split your routes into perfect stages.',
                     style: TextStyle(fontSize: 16, color: Colors.blueGrey),
                   ),
                   const SizedBox(height: 30),
@@ -65,15 +71,15 @@ class _ManualEffortScreenState extends State<ManualEffortScreen> {
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       labelText: 'Max Walk Effort (Km)',
                       hintText: 'Es: 15',
                       prefixIcon: const Icon(Icons.directions_walk),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Inserisci un valore';
-                      if (double.tryParse(value) == null) return 'Inserisci un numero valido';
+                      if (value == null || value.isEmpty) return 'Enter a value';
+                      if (double.tryParse(value) == null) return 'Enter a valid number';
                       return null;
                     },
                   ),
@@ -85,15 +91,15 @@ class _ManualEffortScreenState extends State<ManualEffortScreen> {
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       labelText: 'Max Bike Effort (Km)',
                       hintText: 'Es: 50',
                       prefixIcon: const Icon(Icons.directions_bike),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Inserisci un valore';
-                      if (double.tryParse(value) == null) return 'Inserisci un numero valido';
+                      if (value == null || value.isEmpty) return 'Enter a value';
+                      if (double.tryParse(value) == null) return 'Enter a valid number';
                       return null;
                     },
                   ),
@@ -110,7 +116,7 @@ class _ManualEffortScreenState extends State<ManualEffortScreen> {
                         ),
                       ),
                       onPressed: _saveAndContinue,
-                      child: const Text('SALVA E INIZIA', style: TextStyle(color: Colors.white, fontSize: 16)),
+                      child: const Text('SAVE AND CONTINUE', style: TextStyle(color: Colors.white, fontSize: 16)),
                     ),
                   ),
                 ],

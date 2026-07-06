@@ -65,7 +65,7 @@ class TripProvider extends ChangeNotifier {
   }
 
   // metodo per eliminare tutti i dati, se l'utente fa il logout
-  void clearData() {
+  Future<void> clearTripProvider() async {
     tripList.clear(); // Svuota tutta la lista dei viaggi
     notifyListeners();
   }

@@ -33,11 +33,11 @@ class _TripsbodyState extends State<Tripsbody> {
 
             // --- WIDGET CONTENITORE TRATTEGGIATO ---
             DottedBorder(
-              color: const Color(0xFF1B3B5A), // Colore del tratteggio
+              color: const Color(0xFF1B365D), // Colore del tratteggio
               strokeWidth: 2,                 // Spessore
               dashPattern: const [8, 4],      // Lunghezza tratto, lunghezza spazio
               borderType: BorderType.RRect,   // Rettangolo arrotondato
-              radius: const Radius.circular(15),
+              radius: const Radius.circular(16),
               padding: const EdgeInsets.all(20), // Spazio interno dal bordo
               child: Column(
                 mainAxisSize: MainAxisSize.min, // Occupa solo lo spazio necessario
@@ -48,17 +48,17 @@ class _TripsbodyState extends State<Tripsbody> {
                     onTap: () async { 
                         // SE  non è stata selezionata un'attività, mostro un messaggio di errore e non apro il file picker
                         if (!isReadyToUpload) {
-                          print("Tasto premuto, ma nessuna attività selezionata!");
+                          print("The button is pressed, but no activity is selected!");
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Seleziona prima un\'attività (walk o bike)!'),
+                              content: Text('Select an activity (walk or bike) first!'),
                               backgroundColor: Colors.redAccent,
                             ),
                           );
                           return; // IMPORTANTE: Esce dalla funzione onTap, così non va avanti a caricare il file.
                         }else{
                           // SE è stata selezionata un'attività, procedo con l'apertura del file picker
-                          print("Apertura selettore file gpx per la modalità: $selectedActivity");
+                          print("Opening GPX file picker for mode: $selectedActivity");
                           
                           // chiamo il metodo addTrip del provider, che si occuperà di aprire il file picker, leggere il file, creare l'oggetto Trip, calcolare le tappe e aggiungere tutto al DB (lista dei viaggi) del provider
                           bool success = await Provider.of<TripProvider>(context, listen: false).addTrip(selectedActivity!); 
@@ -66,14 +66,14 @@ class _TripsbodyState extends State<Tripsbody> {
                           if (success) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Percorso caricato nella tua lista!'),
+                                content: Text('Trip uploaded to your list!'),
                                 backgroundColor: Colors.green,
                               ),);
                            
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Errore nel caricamento del percorso. Riprova!'),
+                                content: Text('Error uploading the trip. Please try again!'),
                                 backgroundColor: Colors.redAccent,
                               ),);
                           }
@@ -100,25 +100,26 @@ class _TripsbodyState extends State<Tripsbody> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           // Bordo solido interno, ma puoi anche toglierlo se preferisci solo quello tratteggiato esterno
-                          border: Border.all(color: const Color(0xFF1B3B5A), width: 1.5), 
-                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF1B365D), width: 1.5), 
+                          borderRadius: BorderRadius.circular(12),
                         ),
 
                         child: const Column(
                           children: [
-                            Icon(Icons.upload_file, size: 50, color: Color(0xFF1B3B5A)),
+                            Icon(Icons.upload_file, size: 50, color: Color(0xFF1B365D)),
                             SizedBox(height: 10),
                             Text(
                               'New Trip',
                               style: TextStyle(
                                 fontSize: 18, 
                                 fontWeight: FontWeight.bold, 
-                                color: Color(0xFF1B3B5A)
+                                color: Color(0xFF1B365D)
                               ),
                             ),
+
                             SizedBox(height: 5),
                             Text(
-                                'Carica file GPX per dividere\nun nuovo percorso',
+                                'Upload the GPX file for your next trip',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(color: Colors.grey, fontSize: 12),
                                 )
@@ -154,7 +155,7 @@ class _TripsbodyState extends State<Tripsbody> {
                                 ? Colors.white
                                 : Colors.black54, // Testo più scuro se disabilitato
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                         ),
@@ -193,24 +194,85 @@ class _TripsbodyState extends State<Tripsbody> {
             ),
             const SizedBox(height: 20), // Spazio tra il riquadro e la lista
 
-              // 2. LISTA SCORREVOLE DEI VIAGGI
-              // Usiamo Expanded per dire alla ListView di prendersi tutto lo spazio rimasto
-              // 1. Accedi al provider DBtrips
+            // 2. LISTA SCORREVOLE DEI VIAGGI
                        
-            Expanded( 
+            Expanded(  // Usiamo Expanded per dire alla ListView di prendersi tutto lo spazio rimasto
               child: Consumer<TripProvider>(
                 builder: (context, dbTrips, child) {
                   final tripsList = dbTrips.tripList;
 
                   if (tripsList.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'Nessun viaggio caricato. Carica un file GPX per iniziare!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 40.0, left: 10.0, right: 10.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // 1. Icona decorativa molto sbiadita
+                          Icon(Icons.explore_outlined, size: 60, color: Colors.grey.shade300),
+                          const SizedBox(height: 15),
+                          
+                          // 2. Titolo accogliente ma meno marcato
+                          const Text(
+                            'Ready for a new adventure?',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black54),
+                          ),
+                          const SizedBox(height: 25),
+                          
+                          // 3. Istruzioni Step 1
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Icona numerica color pesca chiaro invece che arancione forte
+                              Icon(Icons.looks_one, color: Colors.orange.shade300, size: 22),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: RichText( // Widget che permette di mettere alcune parole in grassetto, prende un oggetto TextSpan
+                                  text: TextSpan(
+                                    
+                                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.4),// Stile base per tutto il blocco: grigio medio
+                                    children: const [ //lista di altri TextSpan, che possono avere stili diversi
+                                      TextSpan(text: 'Choose if you want to travel '),
+                                      // Grassetto ma grigio scuro, per non "urlare"
+                                      TextSpan(text: 'By Walk', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
+                                      TextSpan(text: ' or '),
+                                      TextSpan(text: 'By Bike', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
+                                      TextSpan(text: ' using the buttons above.'),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 15),
+                          
+                          // 4. Istruzioni Step 2
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.looks_two, color: Colors.orange.shade300, size: 22),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: RichText(
+                                  text: TextSpan(
+                                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.4),
+                                    children: const [
+                                      TextSpan(text: 'Tap on '),
+                                      TextSpan(text: 'New Trip', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
+                                      TextSpan(text: ' to upload a '),
+                                      TextSpan(text: '.gpx file', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
+                                      TextSpan(text: ' from your device.'),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     );
                   } else {
+                    // ... resto del codice ListView.builder ...
                     return ListView.builder(
                       physics: const BouncingScrollPhysics(),
                       itemCount: tripsList.length,

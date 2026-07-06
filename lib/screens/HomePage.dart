@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomePage> {
   Future<void> _loadNickname() async {
     final sp = await SharedPreferences.getInstance();
     setState(() {
-      _nickname = sp.getString('nickname') ?? "Viaggiatore"; // Fallback se non c'è
+      _nickname = sp.getString('nickname') ?? "Exlporer"; // Fallback se non c'è
     });
   }
  
@@ -55,14 +55,14 @@ class _HomeScreenState extends State<HomePage> {
 
         destinations: [
           NavigationDestination(
-            icon: Icon(Icons.terrain_outlined),
-            selectedIcon: Icon(Icons.terrain),
-            label: "Trips",
+            icon: Icon(Icons.explore_outlined ), // oppure map_outlined, .route, 
+            selectedIcon: Icon(Icons.explore_outlined), // oppure .map, .route, .explore_outlined
+            label: "Trips", // oppure
           ),
           NavigationDestination(
-            icon: Icon(Icons.directions_run_outlined),
-            selectedIcon: Icon(Icons.directions_run),
-            label: "Training",
+            icon: Icon(Icons.directions_walk_outlined), // oppure .fitness_center, speed_outlined, insights_outlined, monitor_heart_outlined
+            selectedIcon: Icon(Icons.directions_walk), // oppure .fitness_center, speed_outlined, insights_outlined, monitor_heart_outlined
+            label: "Activity", // oppure "Training" o  "Activity"
           ),
           
         ],
@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomePage> {
 
     appBar: AppBar(
           title: Text(
-            selectedIndex == 0 ? 'I viaggi di $_nickname' : 'Allenamento',
+            selectedIndex == 0 ? 'My Planned Trips' : 'Activity Profile', //oppure My past activities
             style: TextStyle( color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18, ),
           ),
           backgroundColor: const Color(0xFF1B365D),
@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomePage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
+            DrawerHeader( // widget che mostra l'intestazione del drawer, con il nickname dell'utente e un'icona
               decoration: const BoxDecoration(
                 color: Color(0xFF1B365D), 
               ),
@@ -93,14 +93,14 @@ class _HomeScreenState extends State<HomePage> {
                 children: [
                   const Icon(Icons.account_circle, size: 60, color: Colors.white),
                   const SizedBox(height: 10),
-                  Text('Ciao, $_nickname!', style: const TextStyle(color: Colors.white, fontSize: 20)),
+                  Text('Hi, $_nickname !', style: const TextStyle(color: Colors.white, fontSize: 20)),
                 ],
               ),
             ),
 
             ListTile( 
               leading: const Icon(Icons.settings),
-              title: const Text('Impostazioni'),
+              title: const Text('Settings'),
               onTap: () async { 
                 // 1. chiudo il drawer prima di navigare alla pagina delle impostazioni
                 Navigator.pop(context); 
@@ -131,8 +131,8 @@ void _showLogoutConfirmation(BuildContext context) {
     context: context,
     builder: (BuildContext dialogContext) {
       return AlertDialog(
-        title: const Text('Conferma Logout'),
-        content: const Text('Sei sicuro di voler uscire? Tutti i tuoi dati locali verranno cancellati.'),
+        title: const Text('Confirm Logout'),
+        content: const Text('Are you sure you want to log out? \nAll your training data will be deleted forever !'),
         actions: [
           // --Bottone NO --
           TextButton(
@@ -150,10 +150,10 @@ void _showLogoutConfirmation(BuildContext context) {
               Navigator.of(dialogContext).pop();
 
               // 2. Svuotiamo i Provider (listen: false è OBBLIGATORIO nei bottoni)
-              Provider.of<TrainingProvider>(context, listen: false).clearData();
-              Provider.of<TripProvider>(context, listen: false).clearData();
+              await Provider.of<TrainingProvider>(context, listen: false).clearTrainingProvider();
+              await Provider.of<TripProvider>(context, listen: false).clearTripProvider();
 
-              // 3. Accediamo alle SharedPreferences e PULIAMO TUTTO DEFINITIVAMENTE
+              // 3. Svuotiamo la sp
               final sp = await SharedPreferences.getInstance();
               await sp.clear();
 
