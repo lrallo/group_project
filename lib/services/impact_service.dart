@@ -109,7 +109,6 @@ class ImpactService{
       return null; // se non riesco a refreshare, significa che il refresh token è scaduto, ritorno null cosi l'utente viene reindirizzato al login
     }
   }
-
   // 4. fai richieste a blocchi di 7 giorni finché non arrivi alla data finale desiderata
   while (currentStart.isBefore(endDate) || currentStart.isAtSameMomentAs(endDate)) {
     // Aggiungo 6 giorni per avere un blocco di 7 giorni inclusivi

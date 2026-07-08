@@ -13,30 +13,43 @@ class GpxService{
   // --- IMPORT ---
   static Future<Trip?> pickGpx(String selectedActivity) async{
 
-    // 1. salvo il file caricato nella variabile result
-    FilePickerResult? result = await FilePicker.platform.pickFiles( 
-          type: FileType.custom,
-          allowedExtensions: ['gpx'],
-          withData: true,
-          allowMultiple: false,
-        );
-    print('File picker chiuso, lettura del file in corso...');
+    try {
+      // 1. Usiamo FileType.any per evitare il crash su Chrome/PC
+      FilePickerResult? result = await FilePicker.platform.pickFiles( 
+            type: FileType.any, // <-- CAMBIATO QUI
+            withData: true,
+            allowMultiple: false,
+          );
+      print('File picker chiuso, lettura del file in corso...');
 
-    if (result != null) { // se l'utente ha selezionato un file
-      String fileName = result.files.single.name;
-      try {
-        // 2. leggo il contenuto del file e lo converto in una stringa e poi in un oggetto Gpx
-        String contenutoXml = utf8.decode(result.files.single.bytes!); 
-        Gpx gpxData = GpxReader().fromString(contenutoXml); 
-        print('File GPX letto correttamente, creazione dell\'oggetto  Trip...');
-        return Trip(fileName, selectedActivity, gpxData);
+      if (result != null) { 
+        String fileName = result.files.single.name;
+        
+        // --- NUOVO CONTROLLO MANUALE DELL'ESTENSIONE ---
+        if (!fileName.toLowerCase().endsWith('.gpx')) {
+          print("Errore: Il file selezionato non è un GPX!");
+          return null; // Ritorna null, così la UI mostrerà lo SnackBar di errore
+        }
+        // -----------------------------------------------
 
-      } catch (e) {
-        print("Errore nella lettura del GPX: $e");
-        return null; // Gestione dell'errore (file corrotto, ecc.)
+        try {
+          // 2. Leggo il contenuto
+          String contenutoXml = utf8.decode(result.files.single.bytes!); 
+          Gpx gpxData = GpxReader().fromString(contenutoXml); 
+          print('File GPX letto correttamente, creazione dell\'oggetto Trip...');
+          return Trip(fileName, selectedActivity, gpxData);
+
+        } catch (e) {
+          print("Errore nella lettura del GPX: $e");
+          return null; 
+        }
       }
+      return null; 
+      
+    } catch (e) {
+      print("Errore critico durante l'apertura del FilePicker: $e");
+      return null;
     }
-    return null; // L'utente ha chiuso il picker senza scegliere file
   } //pickGpx
 
   // --- EXPORT ---

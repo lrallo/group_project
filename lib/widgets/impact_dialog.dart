@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:project_app/providers/TrainingProvider.dart';
-import 'package:project_app/screens/LoginPage.dart';
 
 // Funzione async che mostra un dialog per chiedere all'utente il permesso
 Future<void> showImpactPermissionDialog({
   // INPUT della funzione:
-  required BuildContext context,   // context della pagina da cui viene chiamata la funzione, serve per mostrare il dialog
+  required BuildContext context,   // context della pagina da cui viene chiamata la funzione, serve per dire a Flutter dove mostrare il dialog
+
   // CALLBACKS della funzione:
   required VoidCallback onSuccess, // funzione da eseguire se l'utente accetta di dare il permesso
-  required VoidCallback onError,   // funzione da eseguire se c'è un errore nel recuperare i dati IMPACT
+  required Function(int) onError,   // funzione da eseguire se .getTrainingData restituisce 401 o 500
   required VoidCallback onDecline, // funzione da eseguire se l'utente rifiuta di dare il permesso
-}) async {
-  return showDialog<void>( // Funzione che Dice a Flutter di oscurare lo sfondo della pagina corrente e di "spingere" sopra lo schermo una nuova area vuota in cui comparirà qualcosa.
+}) 
+
+async {
+  return showDialog<void>( // Funzione nativa di Flutter che dice a Flutter di oscurare lo sfondo della pagina corrente e di "spingere" sopra lo schermo una nuova area vuota in cui comparirà qualcosa.
     context: context,
     barrierDismissible: false, // Impedisce la chiusura cliccando fuori
     builder: (BuildContext dialogContext) { // parametro che richiede uan funzione che ritorni un Widget da mostrare nell'area del dialog
@@ -33,6 +35,7 @@ Future<void> showImpactPermissionDialog({
                   )
                 : const Text(  // FALSE: se non stiamo scaricando i dati, mostriamo il messaggio di richiesta permesso
                     'Would you like to allow SmartStage to access your activity history from your fitness tracker? This helps us personalize your daily stage limits.\n\nIf you decline, you can still use the app, but you will need to manually input your maximum effort metrics.'),
+            
             actions: isFetching     // parametro che vuole la lista dei bottoni da mostrare in basso nel dialog
                 ? []        // TRUE: se stiamo scaricando i dati, non mostriamo bottoni
                 : <Widget>[ // FALSE: se non stiamo scaricando i dati, mostriamo i bottoni "No" e "Sì"
@@ -44,10 +47,10 @@ Future<void> showImpactPermissionDialog({
                       },
                     ),
                     TextButton(
-                      child: const Text('Yes, connect'), // <-- Testo più amichevole
+                      child: const Text('Yes, connect'), 
                       onPressed: () async {
                         setDialogState(() {
-                          isFetching = true;
+                          isFetching = true; // Aggiorna lo stato del dialog per mostrare l'indicatore di caricamento
                         });
 
                         // 1. Facciamo la chiamata di rete
@@ -62,19 +65,8 @@ Future<void> showImpactPermissionDialog({
                         // 4. Gestiamo i risultati
                         if (status == 200) {
                           onSuccess(); 
-                        } else if (status == 401) { 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Fitness tracker session expired, please log in again.'), // <-- UX Smartwatch
-                              backgroundColor: Colors.orange
-                            ),
-                          );
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (context) => LoginPage()), 
-                            (Route<dynamic> route) => false 
-                          ); 
-                        } else {
-                          onError(); 
+                        } else  { 
+                          onError(status);
                         }
                       },
                     ),

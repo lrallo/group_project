@@ -124,14 +124,14 @@ Future<void> calculateAndCut(Trip trip, double maxDayEffortKm) async {
   if (currentStagePoints.length > 1) {
     int stageNum = generatedStages.length + 1;
     Gpx finalGpx = Gpx(); 
-    var finalTrk = Trk(name: 'Tappa $stageNum');
+    var finalTrk = Trk(name: 'Stage $stageNum');
     finalTrk.trksegs.add(Trkseg(trkpts: currentStagePoints)); 
     
     finalGpx.metadata = gpxData.metadata; 
     finalGpx.trks.add(finalTrk); 
 
     generatedStages.add(dayTrip(
-      'Tappa Finale', 
+      'Final Stage', 
       activity,
       finalGpx, 
       stageNum,

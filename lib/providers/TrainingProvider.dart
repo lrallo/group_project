@@ -8,15 +8,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:project_app/models/performanceMetrics.dart';
 
 class TrainingProvider extends ChangeNotifier { 
-  PerformanceMetrics? userMetrics; 
-  bool _isLoading = false;
-  bool get isLoading => _isLoading; // variabile che permette di avvisare la UI quando sono in fase di caricamento, in modo da mostrare la rotellina
-  
+  PerformanceMetrics? userMetrics;// metriche utente
+  bool isLoading = false;        // variabile che indica se il provider sta caricando i dati da IMPACT
   bool impactPermission = false; // variabile che indica se l'utente ha dato il permesso di accedere ai dati di IMPACT
   
 
 
-  // funzione che AGGIORNA la variabile del provider e della sp
+  // funzione che AGGIORNA la variabile sia nel provider che nella sp
   Future<void> changePermission(bool value) async {
   impactPermission = value;
   final sp = await SharedPreferences.getInstance();
@@ -26,7 +24,49 @@ class TrainingProvider extends ChangeNotifier {
 
 
 
-// metodo che CARICA LE VECCHIE METRICHE se l'utente ha fatto il login meno di 24h fa (da usare in splash)
+
+  // Funzione per DATI DA IMPACT
+  Future<int> getTrainingData() async {
+    isLoading = true;
+    notifyListeners(); //avviso che lo stato di caricamento è cambiato, così la UI può aggiornarsi
+
+    try {
+      // 1. Seleziono le date per l'analisi: ultimi 30 giorni
+      DateTime endDate = DateTime.now().subtract(const Duration(days: 1)); 
+      DateTime startDate = endDate.subtract(const Duration(days: 29)); // 30 giorni totali, incluso il giorno di fine (endDate)
+      // 2. Recupero i dati facendo una richiesta al Server Impact, restituisce una lista di oggetti Training 
+      List<Training>? rawData = await ImpactService.getHistoricalExerciseData(startDate, endDate);
+      
+      if (rawData == null) return 401; // se non c'è l'acces token salvato o il refresh è scaduto, bisogna reindirizzare l'utente al login
+
+      // 3. analizzo i dati per calcolare le metriche di performance dell'utente
+      userMetrics = PerformanceAnalyzer.analyze(rawData);
+
+      // 4. salvo le metriche nella memoria locale per poterla usare in seguito, anche in offline e senza dover rifare la richiesta al server
+      final sp = await SharedPreferences.getInstance();
+      await sp.setDouble('maxWalk', userMetrics!.maxWalkEffortKm); //km di camminata sostenibile in un giorno di viaggio a tappe
+      await sp.setDouble('maxBike', userMetrics!.maxBikeEffortKm);
+      await sp.setInt('analysisWindow', userMetrics!.analysisWindowDays ?? 0);
+      await sp.setInt('activeDays', userMetrics!.activeDays ?? 0);
+      await sp.setString('dailyWalkMap', jsonEncode(userMetrics!.dailyWalkEffort));//salvo la mappa giorno->km di camminata per mostrare i dettagli all'utente, e per eventuali calcoli futuri
+      await sp.setString('dailyBikeMap', jsonEncode(userMetrics!.dailyBikeEffort));
+      print('\n---- Metriche salvate nella memoria locale (SharedPreferences) ----');
+      return 200; 
+      
+    } catch (e) {
+      print('Errore critico in getTrainingData: $e');
+      return 500;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    } 
+  } 
+
+
+// ------ FUNZIONI PER GESTIRE I DATI MANUALI E IMPACT ------
+
+
+// metodo che CARICA LE VECCHIE METRICHE dalla memoria locale (usata se l'utente ha fatto il LOGIN MENO DI 24h FA, hp che non siano cambiate molto)
 Future<void> loadLocalMetrics() async {
   // 1. accedo alla sp
   final sp = await SharedPreferences.getInstance();
@@ -36,7 +76,8 @@ Future<void> loadLocalMetrics() async {
   double? bike = sp.getDouble('maxBike');
   
   if (walk != null && bike != null) {
-    if (impactPermission == true) { // se l'utente aveva dato il permesso a IMPACT, carico anche le altre metriche nella sp
+    if (impactPermission == true) { 
+      // --- CASO UTENTE IMPACT: Carichiamo anche le altre metriche ---
       int? window = sp.getInt('analysisWindow');
       int? active = sp.getInt('activeDays');
       
@@ -78,48 +119,8 @@ Future<void> loadLocalMetrics() async {
 }
 
 
-
-
-  // Funzione per DATI DA IMPACT
-  Future<int> getTrainingData() async {
-    _isLoading = true;
-    notifyListeners(); //avviso che lo stato di caricamento è cambiato, così la UI può aggiornarsi
-
-    try {
-      // 1. Seleziono le date per l'analisi: ultimi 30 giorni
-      DateTime endDate = DateTime.now().subtract(const Duration(days: 1)); 
-      DateTime startDate = endDate.subtract(const Duration(days: 29)); // 30 giorni totali, incluso il giorno di fine (endDate)
-      // 2. Recupero i dati facendo una richiesta al Server Impact, restituisce una lista di oggetti Training 
-      List<Training>? rawData = await ImpactService.getHistoricalExerciseData(startDate, endDate);
-      
-      if (rawData == null) return 401; // se non c'è l'acces token salvato o il refresh è scaduto, bisogna reindirizzare l'utente al login
-
-      // 3. analizzo i dati per calcolare le metriche di performance dell'utente
-      userMetrics = PerformanceAnalyzer.analyze(rawData);
-
-      // 4. salvo le metriche nella memoria locale per poterla usare in seguito, anche in offline e senza dover rifare la richiesta al server
-      final sp = await SharedPreferences.getInstance();
-      await sp.setDouble('maxWalk', userMetrics!.maxWalkEffortKm); //km di camminata sostenibile in un giorno di viaggio a tappe
-      await sp.setDouble('maxBike', userMetrics!.maxBikeEffortKm);
-      await sp.setInt('analysisWindow', userMetrics!.analysisWindowDays ?? 0);
-      await sp.setInt('activeDays', userMetrics!.activeDays ?? 0);
-      await sp.setString('dailyWalkMap', jsonEncode(userMetrics!.dailyWalkEffort));//salvo la mappa giorno->km di camminata per mostrare i dettagli all'utente, e per eventuali calcoli futuri
-      await sp.setString('dailyBikeMap', jsonEncode(userMetrics!.dailyBikeEffort));
-      print('\n---- Metriche salvate nella memoria locale (SharedPreferences) ----');
-      return 200; 
-      
-    } catch (e) {
-      print('Errore critico in getTrainingData: $e');
-      return 500;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    } 
-  } 
-
-  
-
-  // funzione che SE l'utente aveva dato il consenso a IMPACT, elimina le vecchie metriche dalla sp e richiama getTrainingData 
+  // metodo che aggiorna le metriche dell'utente (sia manuali che IMPACT)
+  // usata in settings_screen e manual_effort_screen o se l'utente riaccede col permesso ma offline
   Future<int> updateMetrics() async {
     final sp = await SharedPreferences.getInstance();
     bool? permission = sp.getBool('impact_permission'); // carico il permesso che era stato salvato
@@ -145,9 +146,9 @@ Future<void> loadLocalMetrics() async {
     }
   }
 
+  
 
-
-  // metodo per quando l'utente toglie il permesso a IMPACT
+  // ---- FUNZIONI PER GESTIRE IL PASSAGGIO DA IMPACT A MANUALE --
   Future<void> switchToManual() async {
 
   // 1. Aggiorno la variabile del provider e della sp
@@ -176,7 +177,7 @@ Future<void> loadLocalMetrics() async {
 }
 
 
-  // Funzione per DATI MANUALI  (usata in settings_screen e manual_effort_screen)
+// Funzione per DATI MANUALI  (usata in settings_screen e manual_effort_screen)
 Future<void> setManualMetrics(double walkLimit, double bikeLimit) async {
     final sp = await SharedPreferences.getInstance();
     // n.b. non serve cancellare le chiavi sulla sp, perchè vengono cancellate quando l'utente schiaccia il pulsante "switch ""
@@ -203,7 +204,7 @@ Future<void> setManualMetrics(double walkLimit, double bikeLimit) async {
   // PULIZIA DEI DATI DEL PROVIDER 
     Future<void> clearTrainingProvider() async {
     userMetrics = null;
-    _isLoading = false;
+    isLoading = false;
     impactPermission = false;
     notifyListeners();//avviso che lo stato di caricamento è cambiato, così la UI può aggiornarsi
   }

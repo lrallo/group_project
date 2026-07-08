@@ -43,20 +43,20 @@ class TrainingBody extends StatelessWidget {
               // crossAxisAlignment.stretch obbliga tutti i figli ad allargarsi per riempire tutta la larghezza dello schermo.
               crossAxisAlignment: CrossAxisAlignment.stretch, 
               children: [
-                const SizedBox(height: 10), // SizedBox crea uno spazio vuoto (in questo caso alto 10 pixel)
+                const SizedBox(height: 5), // SizedBox crea uno spazio vuoto (in questo caso alto 10 pixel)
                 
                 // 1. Badge di stato (Il riquadro a pillola centrale)
                 _buildStatusBadge(
                   provider.impactPermission ? "Fitness Tracker Connected" : "Manual Activity Limits", 
                   provider.impactPermission ? Colors.green : const Color(0xFF1B365D)
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 15),
 
                 // 2. Titolo Descrittivo
                 const Text(
                   "Your maximum daily distances:", 
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1B365D))
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1B365D))
                 ),
                 const SizedBox(height: 15),
 
@@ -73,7 +73,7 @@ class TrainingBody extends StatelessWidget {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         // Padding aggiunge spazio vuoto INTERNAMENTE, in modo che il contenuto non tocchi i bordi della Card.
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10.0),
+                          padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0),
                           child: _buildStatItem(
                             Icons.directions_walk, 
                             "${metrics.maxWalkEffortKm.toStringAsFixed(1)} km", 
@@ -89,10 +89,10 @@ class TrainingBody extends StatelessWidget {
                     // Seconda Card (Bici) con il suo Expanded
                     Expanded(
                       child: Card(
-                        elevation: 4,
+                        elevation: 4, 
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10.0),
+                          padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0),
                           child: _buildStatItem(
                             Icons.directions_bike, 
                             "${metrics.maxBikeEffortKm.toStringAsFixed(1)} km", 
@@ -105,17 +105,14 @@ class TrainingBody extends StatelessWidget {
                   ],
                 ),
                 
-                // 4. SEZIONE GRAFICI (Condizionale)
-                // Se mettiamo "if (condizione) ...[ lista di widget ]", stiamo usando lo "Spread Operator" (...).
-                // Dice a Flutter: se l'utente ha i permessi (impactPermission è vero), scompatta questi widget 
-                // e aggiungili ai children della Column principale. Altrimenti ignora tutto questo blocco.
+                // 4. SEZIONE GRAFICI 
                 if (provider.impactPermission) ...[
                   const SizedBox(height: 40),
                   
                   const Text(
                     "Workout summary:", 
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1B365D))
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1B365D))
                   ),
                   const SizedBox(height: 20),
                   
@@ -147,7 +144,7 @@ class TrainingBody extends StatelessWidget {
   Widget _buildStatusBadge(String title, Color color) {
     return Center(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         // BoxDecoration ci permette di impostare colori di sfondo, angoli arrotondati e bordi di un Container.
         decoration: BoxDecoration(
           color: color.withOpacity(0.1), // Rende il colore molto trasparente per lo sfondo
@@ -163,7 +160,7 @@ class TrainingBody extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               title, 
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)
             ),
           ],
         ),
@@ -178,7 +175,7 @@ class TrainingBody extends StatelessWidget {
         // Container che fa da quadrato pastello dietro l'icona
         Container(
           width: 60,
-          height: 60,
+          height: 50,
           decoration: BoxDecoration(
             color: color.withOpacity(0.15),
             borderRadius: BorderRadius.circular(16),
@@ -186,7 +183,7 @@ class TrainingBody extends StatelessWidget {
           child: Icon(icon, size: 32, color: color),
         ),
         const SizedBox(height: 12),
-        Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF1B365D))),
+        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF1B365D))),
         const SizedBox(height: 4),
         Text(label, style: const TextStyle(fontSize: 14, color: Colors.blueGrey)),
       ],

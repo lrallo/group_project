@@ -41,7 +41,14 @@ class _HomeScreenState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: pages[selectedIndex],
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600), // Limita la larghezza massima a 600 pixel
+            child: pages[selectedIndex]
+            ),
+        ),
+      ),
 
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex,
@@ -153,7 +160,7 @@ void _showLogoutConfirmation(BuildContext context) {
               await Provider.of<TrainingProvider>(context, listen: false).clearTrainingProvider();
               await Provider.of<TripProvider>(context, listen: false).clearTripProvider();
 
-              // 3. Svuotiamo la sp
+              // 3. Svuotiamo la sp 
               final sp = await SharedPreferences.getInstance();
               await sp.clear();
 

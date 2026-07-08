@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:project_app/widgets/impact_dialog.dart'; 
 import 'package:provider/provider.dart';
 import 'package:project_app/providers/TrainingProvider.dart';
+import 'package:project_app/screens/LoginPage.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -41,79 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
-  // Salvataggio ESCLUSIVO per i dati manuali
-  Future<void> _saveManualSettings() async {
-    // tryParse controlla che l'utente abbia inserito numeri validi
-    double? walkValue = double.tryParse(_walkController.text);
-    double? bikeValue = double.tryParse(_bikeController.text);
-
-    if (walkValue == null || bikeValue == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter valid numbers for the kilometers!'), backgroundColor: Colors.red),
-      );
-      return; 
-    }
-    
-    // DELEGHIAMO IL SALVATAGGIO AL PROVIDER! (Sia per lo stato che per le SharedPreferences)
-    await Provider.of<TrainingProvider>(context, listen: false).setManualMetrics(walkValue, bikeValue);
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Manual metrics updated!'), backgroundColor: Colors.green),
-    );
-  }
-
-  // Gestione dello switch IMPACT
-  Future<void> _toggleImpactPermission(bool newValue) async {
-
-    if (newValue == true) { // da OFF a ON
-      await showImpactPermissionDialog( // apre il popup di consenso a impact
-        context: context,
-        onSuccess: () async { 
-          // 1. Aggiorna SUBITO il permesso nel provider e nelle SharedPreferences
-          await Provider.of<TrainingProvider>(context, listen: false).changePermission(true);
-
-          // 2. Scarica i dati direttamente
-          // (n.b. non serve prima svuotare la sp dai dati precedenti)
-          int status = await Provider.of<TrainingProvider>(context, listen: false).getTrainingData();
-
-          if (status == 200) { // se va a buon fine, rebuildo la UI
-            setState(() { _hasImpactPermission = true; });
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Fitness tracker data fetched successfully!'), backgroundColor: Colors.green),
-            );
-          } else {
-            // Se fallisce, rimettiamo a false per sicurezza
-            await Provider.of<TrainingProvider>(context, listen: false).changePermission(false);
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Error syncing fitness tracker. Please try again.'), backgroundColor: Colors.red),
-            );
-          }
-        },
-        onError: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error syncing data. Please try again.'), backgroundColor: Colors.red),
-          );
-        },
-        onDecline: () {}
-      );
-    } else { // da ON a OFF
-    // 1.notifico la UI che lo stato è cambiato
-      setState(() { 
-        _hasImpactPermission = false; 
-      });
-    if (mounted) { 
-
-      await Provider.of<TrainingProvider>(context, listen: false).switchToManual(); //tolgo le metriche che non servono più e aggiorno la variabile del provider
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fitness tracker disconnected. Please enter metrics manually.'), backgroundColor: Colors.orange),
-      );
-    }
-  }
-  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +72,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
 
                     child: SwitchListTile( // widget che unisce un interrutore switch e un titolo con sottotitolo
-                      title: const Text('Link Fitness Tracker', style: TextStyle(fontWeight: FontWeight.bold)),
+                      title: const Text('Link Fitness Tracker', style: TextStyle(fontWeight: FontWeight.bold),),
                       subtitle: const Text('Automatically calculate your level based on your fitness tracker history.'),
                       activeColor: const Color(0xFF1B365D),
                       value: _hasImpactPermission,  // stato attuale dell'iterrutore
@@ -151,51 +80,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
 
-                  // il pulsante è in OFF
-                  if (!_hasImpactPermission) ...[
-                    const SizedBox(height: 40),
-                    const Text("Set Your Daily Limits", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black54)),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Set the maximum distance you feel comfortable covering each day. We\'ll use these limits to split your routes into perfect stages.',
-                      style: TextStyle(fontSize: 14, color: Colors.blueGrey),
-                    ),
-                    const SizedBox(height: 20),
-                    
-                    TextField(
-                      controller: _walkController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(
-                        labelText: 'Max daily walking distance (km)',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        prefixIcon: const Icon(Icons.directions_walk),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    TextField(
-                      controller: _bikeController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(
-                        labelText: 'Max daily cycling distance (km)',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        prefixIcon: const Icon(Icons.directions_bike),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1B365D),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: _saveManualSettings, // Salva i dati tramite il Provider
-                        icon: const Icon(Icons.save, color: Colors.white),
-                        label: const Text('SAVE MANUAL METRICS', style: TextStyle(color: Colors.white, fontSize: 16)),
-                      ),
-                    ),
-                  ],
+                  
+                  !_hasImpactPermission 
+                  // ---- se il pulsante è OFF ---
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start, // Mantiene l'allineamento a sinistra
+                        children: [
+                          const SizedBox(height: 40),
+                          const Text("Set Your Daily Limits", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black54)),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Set the maximum distance you feel comfortable covering each day. We\'ll use these limits to split your routes into perfect stages.',
+                            style: TextStyle(fontSize: 14, color: Colors.blueGrey),
+                          ),
+                          const SizedBox(height: 20),
+                          TextField(
+                            controller: _walkController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(
+                              labelText: 'Max daily walking distance (km)',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              prefixIcon: const Icon(Icons.directions_walk),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          TextField(
+                            controller: _bikeController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(
+                              labelText: 'Max daily cycling distance (km)',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              prefixIcon: const Icon(Icons.directions_bike),
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 55,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1B365D),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              onPressed: _saveManualSettings, // Salva i dati tramite il Provider
+                              icon: const Icon(Icons.save, color: Colors.white),
+                              label: const Text('SAVE MANUAL METRICS', style: TextStyle(color: Colors.white, fontSize: 16)),
+                            ),
+                          ),
+                        ],
+                      )
+                    // ---- se il pulsante è ON ---
+                    : const SizedBox(), // widget vuoto e invisibile al posto dei campi
                 ],
               ),
             ),
@@ -203,6 +138,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+
+
+  // Salvataggio ESCLUSIVO per i dati manuali
+  Future<void> _saveManualSettings() async {
+    // controlla che l'utente abbia inserito numeri validi
+    double? walkValue = double.tryParse(_walkController.text);
+    double? bikeValue = double.tryParse(_bikeController.text);
+    // controllo che i valori siano validi e non nulli
+    if (walkValue == null || bikeValue == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter valid numbers for the kilometers!'), backgroundColor: Colors.red),
+      );
+      return; 
+    }
+    // DELEGO IL SALVATAGGIO AL PROVIDER 
+    await Provider.of<TrainingProvider>(context, listen: false).setManualMetrics(walkValue, bikeValue);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Manual metrics updated!'), backgroundColor: Colors.green),
+    );
+  }
+
+  // Gestione dello switch IMPACT
+  Future<void> _toggleImpactPermission(bool newValue) async {
+
+    if (newValue == true) { // da OFF a ON
+      await showImpactPermissionDialog( // apre il popup di consenso a impact
+        context: context,
+        onSuccess: () async { // .getTrainingData ha restituito 200 (dati caricati con successo) e il dialog si è chiuso
+        
+        // 1. Aggiorniamo solo il permesso 
+        await Provider.of<TrainingProvider>(context, listen: false).changePermission(true);
+        
+        // 2. Aggiorniamo l'interfaccia
+        setState(() { _hasImpactPermission = true; });
+        
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Fitness tracker data fetched successfully!'), backgroundColor: Colors.green),
+        );
+        },
+        
+        onError: (int status) { // .getTrainingData ha restituito un errore (401 o 500), probabilmente refresh Token scaduto o utente offline
+          if (status == 401) {
+            // --- CASO 401: Refresh Token Scaduto ---
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Session expired. Please log in again.'), 
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            // Reindirizzo alla LoginPage
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => LoginPage()), 
+              (Route<dynamic> route) => false
+            );
+
+          } else {
+            // --- Offline o altro errore ---
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Network error: couldn\'t sync data. Check your connection. \nKeeping your offline metrics.'), 
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+        onDecline: () {}
+      );
+    } else { // da ON a OFF
+    // 1.notifico la UI che lo stato è cambiato
+      setState(() { 
+        _hasImpactPermission = false; 
+      });
+
+    if (mounted) { 
+
+      await Provider.of<TrainingProvider>(context, listen: false).switchToManual(); //tolgo le metriche che non servono più e aggiorno la variabile del provider
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fitness tracker disconnected. Please enter metrics manually.'), backgroundColor: Colors.orange),
+      );
+    }
+  }
+  }
+
+  // to prevent memory leaks:
   @override
   void dispose() {   // quando l'utente chiude la pagina e torna nella HomePage
   // Libera la memoria del telefono distruggendo i TextEditingController. Se non lo facessi, l'app consumerebbe sempre più RAM a ogni apertura delle impostazion
@@ -210,4 +235,5 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _bikeController.dispose();
     super.dispose();
   }
+  // n.b. non messo in Login e onBoarding screens perchè meno "impattante"
 }

@@ -15,6 +15,7 @@ class TripStagesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
 
     return Scaffold(
+      resizeToAvoidBottomInset: false, //impedisce alla schermata di sfondo di schiacciarsi
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: const Text('TRIP PLANNING', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -34,38 +35,36 @@ class TripStagesScreen extends StatelessWidget {
                 // ------- TITOLO DEL VIAGGIO (con possibilità di modifica) ----
                 GestureDetector( // widget che rileva il tocco sul titolo del viaggio, per permettere la modifica del titolo
                   onTap: () {
-                    
-                    showDialog( // widget che mostra un pop-up con un TextField per inserire il nuovo titolo del viaggio
+                    showDialog(
                       context: context,
                       builder: (contextDialog) {
                         TextEditingController titleController = TextEditingController(text: trip.title);
 
                         return AlertDialog(
                           title: const Text('Edit Trip Title', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          content: TextField(
-                            controller: titleController,
-                            decoration: const InputDecoration(
-                              hintText: 'Enter the new title',
-                              border: OutlineInputBorder(),
+                          // SOLUZIONE: Avvolgiamo il TextField in un SingleChildScrollView
+                          content: SingleChildScrollView(
+                            child: TextField(
+                              controller: titleController,
+                              decoration: const InputDecoration(
+                                hintText: 'Enter the new title',
+                                border: OutlineInputBorder(),
+                              ),
                             ),
                           ),
-
                           actions: [
                             TextButton(
-                              onPressed: () => Navigator.pop(contextDialog), // Chiudi senza salvare
+                              onPressed: () => Navigator.pop(contextDialog),
                               child: const Text('CANCEL', style: TextStyle(color: Colors.grey)),
                             ),
-                            // -- pulsante SALVA -- //
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1B365D)),
                               onPressed: () async {
-                                // metodo del provider per aggiornare il titolo e chiamare notifyListeners() 
                                 tripProvider.updateTripTitle(
-                                  indexTrips,          // indice del viaggio selezionato
-                                  titleController.text // Il nuovo titolo digitato
+                                  indexTrips,
+                                  titleController.text 
                                 );
-                                
-                                Navigator.pop(contextDialog); // Chiudi il pop-up
+                                Navigator.pop(contextDialog);
                               },
                               child: const Text('SAVE', style: TextStyle(color: Colors.white)),
                             ),
@@ -73,7 +72,7 @@ class TripStagesScreen extends StatelessWidget {
                         );
                       },
                     );
-                  },// onTap
+                  },
                   child: Container(
                     width: double.infinity,
                     color: const Color(0xFF1B365D),
@@ -142,7 +141,7 @@ class TripStagesScreen extends StatelessWidget {
                           child: Card(
                             
                             color: isSelected ? Colors.blue[50] : Colors.white, //colore sfondo leggermente diverso se la tappa è selezionata
-                            elevation: isSelected ? 4 : 1, // Più ombra se selezionata
+                            elevation: isSelected ? 4 : 1, // Più ombra se è selezionata
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                               side: isSelected 
@@ -223,7 +222,7 @@ class TripStagesScreen extends StatelessWidget {
                           onPressed: () async {
                             // 1. Mostriamo uno SnackBar per avvisare l'utente che stiamo elaborando
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Preparazione dei file in corso...')),
+                              const SnackBar(content: Text('Exporting all stages...'), duration: Duration(seconds: 2)),
                             );
 
                             // 2. Chiamiamo la funzione passando la lista delle tappe e il titolo

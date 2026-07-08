@@ -31,7 +31,17 @@ class ChartCard extends StatelessWidget {
           child: Icon(icon, color: barColor, size: 20), // Icona colorata
         ),
         const SizedBox(width: 12),
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Expanded(
+          // FITTEDBOX PROTEGGE IL TITOLO SE È TROPPO LUNGO
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), // Font rimpicciolito
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -111,32 +121,29 @@ class ChartCard extends StatelessWidget {
                     show: true,
                     rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    
+                    // --- ASSE Y (Sinistra) - Teniamo i km rimpiccioliti ---
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 40,
+                        reservedSize: 45, 
                         getTitlesWidget: (value, meta) {
-                          return Text("${value.toInt()} km", style: const TextStyle(fontSize: 10, color: Colors.grey));
+                          return SideTitleWidget(
+                            axisSide: meta.axisSide,
+                            space: 4, 
+                            child: Text(
+                              "${value.toInt()} km", 
+                              style: const TextStyle(fontSize: 9, color: Colors.blueGrey) 
+                            ),
+                          );
                         },
                       ),
                     ),
-                    bottomTitles: AxisTitles(
+                    
+                    // --- ASSE X (Sotto) ----
+                    bottomTitles: const AxisTitles(
                       sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          int index = value.toInt();
-                          if (index >= 0 && index < sortedDates.length) {
-                            String dateStr = sortedDates[index];
-                            List<String> parts = dateStr.split('-');
-                            if (parts.length == 3) {
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: Text("${parts[2]}/${parts[1]}", style: const TextStyle(fontSize: 10)),
-                              );
-                            }
-                          }
-                          return const Text('');
-                        },
+                        showTitles: false, 
                       ),
                     ),
                   ),

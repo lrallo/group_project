@@ -32,7 +32,7 @@ class Splash extends StatelessWidget {
       if (!context.mounted) return;
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomePage()));
       
-    } else if (result == 401) { // CASO 2: ONLINE ma MAI LOGGATO O LOGIN > 24h fa: Andiamo in LoginPage
+    } else if (result == 401) { // CASO 2: MAI LOGGATO o ONLINE e LOGIN > 24h fa: Andiamo in LoginPage
       if (!context.mounted) return;
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: ((context) => LoginPage())));
     

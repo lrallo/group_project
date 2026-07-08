@@ -32,243 +32,268 @@ class _TripsbodyState extends State<Tripsbody> {
           children: [
 
             // --- WIDGET CONTENITORE TRATTEGGIATO ---
-            DottedBorder(
-              color: const Color(0xFF1B365D), // Colore del tratteggio
-              strokeWidth: 2,                 // Spessore
-              dashPattern: const [8, 4],      // Lunghezza tratto, lunghezza spazio
-              borderType: BorderType.RRect,   // Rettangolo arrotondato
-              radius: const Radius.circular(16),
-              padding: const EdgeInsets.all(20), // Spazio interno dal bordo
-              child: Column(
-                mainAxisSize: MainAxisSize.min, // Occupa solo lo spazio necessario
-                children: [
-                  
-                  // --- TASTO CENTRALE: NEW TRIP ---
-                  GestureDetector(
-                    onTap: () async { 
-                        // SE  non è stata selezionata un'attività, mostro un messaggio di errore e non apro il file picker
-                        if (!isReadyToUpload) {
-                          print("The button is pressed, but no activity is selected!");
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Select an activity (walk or bike) first!'),
-                              backgroundColor: Colors.redAccent,
+            Expanded(
+              flex: 1, // Il riquadro tratteggiato occupa 1/3 dello spazio verticale disponibile
+              child: DottedBorder(
+                color: const Color(0xFF1B365D), // Colore del tratteggio
+                strokeWidth: 2,                 // Spessore
+                dashPattern: const [8, 4],      // Lunghezza tratto, lunghezza spazio
+                borderType: BorderType.RRect,   // Rettangolo arrotondato
+                radius: const Radius.circular(16),
+                padding: const EdgeInsets.all(12), // Spazio interno dal bordo
+                child: Column(
+                  mainAxisSize: MainAxisSize.max, // Occupa solo lo spazio necessario
+                  mainAxisAlignment: MainAxisAlignment.center, // Centra verticalmente i figli
+                  children: [
+                    
+                    // --- TASTO CENTRALE: NEW TRIP ---
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async { 
+                            // SE  non è stata selezionata un'attività, mostro un messaggio di errore e non apro il file picker
+                            if (!isReadyToUpload) {
+                              print("The button is pressed, but no activity is selected!");
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Select an activity (walk or bike) first!'),
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                              return; // IMPORTANTE: Esce dalla funzione onTap, così non va avanti a caricare il file.
+                            }else{
+                              // SE è stata selezionata un'attività, procedo con l'apertura del file picker
+                              print("Opening GPX file picker for mode: $selectedActivity");
+                              
+                              // chiamo il metodo addTrip del provider, che si occuperà di aprire il file picker, leggere il file, creare l'oggetto Trip, calcolare le tappe e aggiungere tutto al DB (lista dei viaggi) del provider
+                              bool success = await Provider.of<TripProvider>(context, listen: false).addTrip(selectedActivity!); 
+                              
+                              if (success) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Trip uploaded to your list!'),
+                                    backgroundColor: Colors.green,
+                                  ),);
+                               
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Error uploading the trip. Please try again!'),
+                                    backgroundColor: Colors.redAccent,
+                                  ),);
+                              }
+                                    
+                              print('Stato attuale del DB:\n${Provider.of<TripProvider>(context, listen: false).tripList.toString()}');
+                              
+                              // riaggiorno la variabile di stato isReadyToUpload, così se l'utente vuole caricare un altro file deve prima scegliere se è walk o bike
+                              isReadyToUpload = false;
+                              //riabilito il tasto di upload resettando la selezione dell'attività, così se l'utente vuole caricare un altro file deve prima scegliere se è walk o bike
+                              setState(() {
+                                selectedActivity = null;
+                              });
+                                    
+                            } },
+                        
+                        
+                                  
+                        child: Opacity(
+                          // Abbassiamo l'opacità se il tasto è disabilitato per dare feedback visivo
+                          opacity: isReadyToUpload ? 1.0 : 0.4, 
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              // Bordo solido interno, ma puoi anche toglierlo se preferisci solo quello tratteggiato esterno
+                              border: Border.all(color: const Color(0xFF1B365D), width: 1.5), 
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          );
-                          return; // IMPORTANTE: Esce dalla funzione onTap, così non va avanti a caricare il file.
-                        }else{
-                          // SE è stata selezionata un'attività, procedo con l'apertura del file picker
-                          print("Opening GPX file picker for mode: $selectedActivity");
-                          
-                          // chiamo il metodo addTrip del provider, che si occuperà di aprire il file picker, leggere il file, creare l'oggetto Trip, calcolare le tappe e aggiungere tutto al DB (lista dei viaggi) del provider
-                          bool success = await Provider.of<TripProvider>(context, listen: false).addTrip(selectedActivity!); 
-                          
-                          if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Trip uploaded to your list!'),
-                                backgroundColor: Colors.green,
-                              ),);
-                           
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Error uploading the trip. Please try again!'),
-                                backgroundColor: Colors.redAccent,
-                              ),);
-                          }
+                                    
+                            child: const Center(
 
-                          print('Stato attuale del DB:\n${Provider.of<TripProvider>(context, listen: false).tripList.toString()}');
-                          
-                          // riaggiorno la variabile di stato isReadyToUpload, così se l'utente vuole caricare un altro file deve prima scegliere se è walk o bike
-                          isReadyToUpload = false;
-                          //riabilito il tasto di upload resettando la selezione dell'attività, così se l'utente vuole caricare un altro file deve prima scegliere se è walk o bike
-                          setState(() {
-                            selectedActivity = null;
-                          });
-
-                        } },
-                    
-                    
-
-                    child: Opacity(
-                      // Abbassiamo l'opacità se il tasto è disabilitato per dare feedback visivo
-                      opacity: isReadyToUpload ? 1.0 : 0.4, 
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 30),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          // Bordo solido interno, ma puoi anche toglierlo se preferisci solo quello tratteggiato esterno
-                          border: Border.all(color: const Color(0xFF1B365D), width: 1.5), 
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-
-                        child: const Column(
-                          children: [
-                            Icon(Icons.upload_file, size: 50, color: Color(0xFF1B365D)),
-                            SizedBox(height: 10),
-                            Text(
-                              'New Trip',
-                              style: TextStyle(
-                                fontSize: 18, 
-                                fontWeight: FontWeight.bold, 
-                                color: Color(0xFF1B365D)
+                              child:  FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Padding(
+                                  padding: EdgeInsets.all(10.0),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.upload_file, size: 40, color: Color(0xFF1B365D)),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'New Trip',
+                                        style: TextStyle(
+                                          fontSize: 12, 
+                                          fontWeight: FontWeight.bold, 
+                                          color: Color(0xFF1B365D)
+                                        ),
+                                      ),
+                                          
+                                      SizedBox(height: 4),
+                                      Text(
+                                            'Upload the GPX file for your next trip',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                                            ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-
-                            SizedBox(height: 5),
-                            Text(
-                                'Upload the GPX file for your next trip',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.grey, fontSize: 12),
-                                )
-                          ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-
-                  const SizedBox(height: 20), // Spazio tra upload e i tasti di scelta
-
-                  // --- TASTI IN BASSO IN RIGA: BY WALK / BY BIKE ---
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Tasto Walk
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              selectedActivity = 'walk'; // Aggiorna lo stato con l'attività selezionata, questo abiliterà il tasto di upload se era disabilitato
-                            });
-                          },
-                          icon: const Icon(Icons.directions_walk, size: 18),
-                          label: const Text('By Walk'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            // Colore pieno se selezionato, sbiadito se non selezionato
-                            backgroundColor: selectedActivity == 'walk' 
-                                ? Colors.orange 
-                                : Colors.orange.shade200,
-                            foregroundColor: selectedActivity == 'walk'
-                                ? Colors.white
-                                : Colors.black54, // Testo più scuro se disabilitato
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+              
+                    const SizedBox(height: 10), // Spazio tra upload e i tasti di scelta
+              
+                    // --- TASTI IN BASSO IN RIGA: BY WALK / BY BIKE ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Tasto Walk
+                        Expanded(
+                          child: SizedBox(
+                            height: 40, // Fissiamo un'altezza più piccola (prima era circa 55 col padding)
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                setState(() { selectedActivity = 'walk'; });
+                              },
+                              icon: const Icon(Icons.directions_walk, size: 16), // Icona leggermente più piccola
+                              label: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text('By Walk', style: TextStyle(fontSize: 13)), // Testo leggermente più piccolo
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 5), // Togliamo il padding verticale
+                                backgroundColor: selectedActivity == 'walk' 
+                                    ? Colors.orange 
+                                    : Colors.orange.shade200,
+                                foregroundColor: selectedActivity == 'walk'
+                                    ? Colors.white
+                                    : Colors.black54,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10), // Raggio leggermente ridotto
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 15),
-                      
-                      // Tasto Bike
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              selectedActivity = 'bike';
-                            });
-                          },
-                          icon: const Icon(Icons.directions_bike),
-                          label: const Text('By Bike'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            // Colore pieno se selezionato, sbiadito se non selezionato
-                            backgroundColor: selectedActivity == 'bike' 
-                                ? const Color(0xFF4A7C59) 
-                                : const Color(0xFF4A7C59).withOpacity(0.4),
-                            foregroundColor: selectedActivity == 'bike'
-                                ? Colors.white
-                                : Colors.black54,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                        
+                        const SizedBox(width: 15),
+                        
+                        // Tasto Bike
+                        Expanded(
+                          child: SizedBox(
+                            height: 40, // Fissiamo la stessa altezza contenuta
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                setState(() { selectedActivity = 'bike'; });
+                              },
+                              icon: const Icon(Icons.directions_bike, size: 16),
+                              label: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text('By Bike', style: TextStyle(fontSize: 13)),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 5), // Togliamo il padding verticale
+                                backgroundColor: selectedActivity == 'bike' 
+                                    ? const Color(0xFF4A7C59) 
+                                    : const Color(0xFF4A7C59).withOpacity(0.4),
+                                foregroundColor: selectedActivity == 'bike'
+                                    ? Colors.white
+                                    : Colors.black54,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 20), // Spazio tra il riquadro e la lista
+            const SizedBox(height: 10), // Spazio tra il riquadro e la lista
 
             // 2. LISTA SCORREVOLE DEI VIAGGI
                        
             Expanded(  // Usiamo Expanded per dire alla ListView di prendersi tutto lo spazio rimasto
+              flex: 2, // La lista occupa 2/3 dello spazio verticale disponibile
               child: Consumer<TripProvider>(
                 builder: (context, dbTrips, child) {
                   final tripsList = dbTrips.tripList;
 
                   if (tripsList.isEmpty) {
                     return Padding(
-                      padding: const EdgeInsets.only(top: 40.0, left: 10.0, right: 10.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // 1. Icona decorativa molto sbiadita
-                          Icon(Icons.explore_outlined, size: 60, color: Colors.grey.shade300),
-                          const SizedBox(height: 15),
-                          
-                          // 2. Titolo accogliente ma meno marcato
-                          const Text(
-                            'Ready for a new adventure?',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black54),
-                          ),
-                          const SizedBox(height: 25),
-                          
-                          // 3. Istruzioni Step 1
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Icona numerica color pesca chiaro invece che arancione forte
-                              Icon(Icons.looks_one, color: Colors.orange.shade300, size: 22),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: RichText( // Widget che permette di mettere alcune parole in grassetto, prende un oggetto TextSpan
-                                  text: TextSpan(
-                                    
-                                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.4),// Stile base per tutto il blocco: grigio medio
-                                    children: const [ //lista di altri TextSpan, che possono avere stili diversi
-                                      TextSpan(text: 'Choose if you want to travel '),
-                                      // Grassetto ma grigio scuro, per non "urlare"
-                                      TextSpan(text: 'By Walk', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
-                                      TextSpan(text: ' or '),
-                                      TextSpan(text: 'By Bike', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
-                                      TextSpan(text: ' using the buttons above.'),
-                                    ],
+                      padding: const EdgeInsets.only(top: 30.0, left: 10.0, right: 10.0),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // 1. Icona decorativa molto sbiadita
+                            Icon(Icons.explore_outlined, size: 50, color: Colors.grey.shade300),
+                            const SizedBox(height: 10),
+                            
+                            // 2. Titolo 
+                            const Text(
+                              'Ready for a new adventure?',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black54),
+                            ),
+                            const SizedBox(height: 15),
+                            
+                            // 3. Istruzioni Step 1
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Icona numerica color pesca chiaro invece che arancione forte
+                                Icon(Icons.looks_one, color: Colors.orange.shade300, size: 22),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: RichText( // Widget che permette di mettere alcune parole in grassetto, prende un oggetto TextSpan
+                                    text: TextSpan(
+                                      
+                                      style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.4),// Stile base per tutto il blocco: grigio medio
+                                      children: const [ //lista di altri TextSpan, che possono avere stili diversi
+                                        TextSpan(text: 'Choose if you want to travel '),
+                                        // Grassetto ma grigio scuro, per non "urlare"
+                                        TextSpan(text: 'By Walk', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
+                                        TextSpan(text: ' or '),
+                                        TextSpan(text: 'By Bike', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
+                                        TextSpan(text: ' using the buttons above.'),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          
-                          const SizedBox(height: 15),
-                          
-                          // 4. Istruzioni Step 2
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(Icons.looks_two, color: Colors.orange.shade300, size: 22),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: RichText(
-                                  text: TextSpan(
-                                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.4),
-                                    children: const [
-                                      TextSpan(text: 'Tap on '),
-                                      TextSpan(text: 'New Trip', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
-                                      TextSpan(text: ' to upload a '),
-                                      TextSpan(text: '.gpx file', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
-                                      TextSpan(text: ' from your device.'),
-                                    ],
+                              ],
+                            ),
+                            
+                            const SizedBox(height: 15),
+                            
+                            // 4. Istruzioni Step 2
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(Icons.looks_two, color: Colors.orange.shade300, size: 22),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: RichText(
+                                    text: TextSpan(
+                                      style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.4),
+                                      children: const [
+                                        TextSpan(text: 'Tap on '),
+                                        TextSpan(text: 'New Trip', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
+                                        TextSpan(text: ' to upload a '),
+                                        TextSpan(text: '.gpx file', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
+                                        TextSpan(text: ' from your device.'),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   } else {
@@ -292,19 +317,19 @@ class _TripsbodyState extends State<Tripsbody> {
       );
   }
 
-  // Metodo helper per creare le singole card dei viaggi
+  // Metodo per creare le singole card dei viaggi
   Widget _buildTripCard(BuildContext context, Trip trip) {
     String formattedSubtitle = "${trip.distance.toStringAsFixed(0)}km | +${trip.elevationPos.toStringAsFixed(0)}m"; // Formatta il sottotitolo con la distanza e il dislivello
     IconData activityIcon = trip.activity == 'bike' ? Icons.directions_bike : Icons.directions_walk;
     // Formattiamo la data di importazione in un formato leggibile
-    String day = trip.importDate.day.toString().padLeft(2, '0');
+    String day = trip.importDate.day.toString().padLeft(2, '0'); //.padLeft(2, '0') serve a garantire che il giorno sia sempre rappresentato con due cifre, aggiungendo uno zero davanti se necessario (es. 01, 02, ..., 09, 10, ...).
     String month = trip.importDate.month.toString().padLeft(2, '0');
     String year = trip.importDate.year.toString();
     String hour = trip.importDate.hour.toString().padLeft(2, '0');
     String minute = trip.importDate.minute.toString().padLeft(2, '0');
     String displayDate = "$day/$month/$year - $hour:$minute";
 
-    return GestureDetector( 
+    return GestureDetector( // widget che permette di rilevare il tap sulla card, così da navigare alla schermata delle tappe del viaggio selezionato
       onTap: () {
         Navigator.push(
           context,
@@ -316,8 +341,8 @@ class _TripsbodyState extends State<Tripsbody> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.all(15),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(15),
@@ -341,25 +366,25 @@ class _TripsbodyState extends State<Tripsbody> {
                   Text(
                     trip.title, 
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                     overflow: TextOverflow.ellipsis, 
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 3),
                   Text(
                     formattedSubtitle, 
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 12,
                       color: Colors.grey,
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 3),
                   Text(
-                    'Caricato il: $displayDate',
+                    'uploaded on: $displayDate',
                     style: TextStyle(
-                      fontSize: 11, 
+                      fontSize: 10, 
                       color: Colors.grey[400], 
                       fontStyle: FontStyle.italic,
                     ),
@@ -374,22 +399,22 @@ class _TripsbodyState extends State<Tripsbody> {
               children: [
                 // 1. Icona Attività (Walk/Bike) - PIÙ GRANDE E IN RISALTO
                 Container(
-                  width: 55,  // Dimensione aumentata
-                  height: 55, // Dimensione aumentata
+                  width: 45,  // Dimensione aumentata
+                  height: 45, // Dimensione aumentata
                   decoration: BoxDecoration(
                     color: trip.activity == 'bike' 
                         ? const Color(0xFF4A7C59).withOpacity(0.15) 
                         : Colors.orange.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(14), // Bordi più morbidi
+                    borderRadius: BorderRadius.circular(10), // Bordi più morbidi
                   ),
                   child: Icon(
                     activityIcon, 
-                    size: 32, // Icona più grande
+                    size: 24, // Icona più grande
                     color: trip.activity == 'bike' ? const Color(0xFF4A7C59) : Colors.orange,
                   ),
                 ),
                 
-                const SizedBox(width: 10), // Spazio tra i due elementi
+                const SizedBox(width: 5), // Spazio tra i due elementi
                 
                 // 2. Bottone Cestino - PIÙ PICCOLO E DISCRETO
                 Material(
@@ -401,12 +426,12 @@ class _TripsbodyState extends State<Tripsbody> {
                       showDialog(
                         context: context,
                         builder: (ctx) => AlertDialog(
-                          title: const Text('Elimina viaggio'),
-                          content: Text('Sei sicuro di voler eliminare "${trip.title}"?'),
+                          title: const Text('Delete Trip'),
+                          content: Text('Are you sure you want to delete "${trip.title}"?'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(ctx),
-                              child: const Text('ANNULLA', style: TextStyle(color: Colors.grey)),
+                              child: const Text('CANCEL', style: TextStyle(color: Colors.grey)),
                             ),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
@@ -418,13 +443,13 @@ class _TripsbodyState extends State<Tripsbody> {
                                 Provider.of<TripProvider>(context, listen: false).removeTrip(trip);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Viaggio eliminato'),
+                                    content: Text('Trip deleted'),
                                     backgroundColor: Colors.redAccent,
                                     duration: Duration(seconds: 2),
                                   ),
                                 );
                               },
-                              child: const Text('ELIMINA', style: TextStyle(color: Colors.white)),
+                              child: const Text('DELETE', style: TextStyle(color: Colors.white)),
                             ),
                           ],
                         ),
@@ -435,7 +460,7 @@ class _TripsbodyState extends State<Tripsbody> {
                       height: 35, // Dimensione ridotta
                       decoration: BoxDecoration(
                         color: Colors.grey.withOpacity(0.15), // Sfondo grigio opaco/tenue
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
                         Icons.delete_outline, 
