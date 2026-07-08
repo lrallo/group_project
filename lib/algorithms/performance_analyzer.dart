@@ -1,5 +1,3 @@
-
-// file: lib/algorithms/performance_analyzer.dart
 import 'package:project_app/models/training.dart';
 import 'package:project_app/models/performanceMetrics.dart';
 

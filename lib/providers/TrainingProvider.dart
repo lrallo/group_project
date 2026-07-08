@@ -24,7 +24,6 @@ class TrainingProvider extends ChangeNotifier {
 
 
 
-
   // Funzione per DATI DA IMPACT
   Future<int> getTrainingData() async {
     isLoading = true;

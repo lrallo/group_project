@@ -1,4 +1,3 @@
-// file: lib/algorithms/trip_splitter.dart
 import 'package:gpx/gpx.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project_app/models/trip.dart';
