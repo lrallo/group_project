@@ -5,7 +5,6 @@ import 'package:project_app/models/trip.dart';
 import 'package:dotted_border/dotted_border.dart'; //bordo tratteggiato per la card di upload del GPX
 import 'package:flutter/foundation.dart' show kIsWeb; // Serve per verificare se siamo su web o su mobile, perché la gestione dei file è diversa
 import 'package:project_app/screens/trip_stages_screen.dart'; // Importiamo la schermata delle tappe per poterci navigare quando clicchiamo su un viaggio nella lista
-import 'package:shared_preferences/shared_preferences.dart'; // Per accedere alla memoria locale e recuperare i valori di maxEffortWalk e maxEffortBike calcolati dal provider di training, così da passarli al provider dei viaggi quando carichiamo un nuovo percorso, in modo che possa calcolare le tappe in base al livello di performance dell'utente
 
 
 class Tripsbody extends StatefulWidget { // StatefulWidget perché dobbiamo gestire lo stato della selezione dell'attività (walk/bike) e abilitare/disabilitare il tasto di upload
@@ -152,7 +151,7 @@ class _TripsbodyState extends State<Tripsbody> {
                         // Tasto Walk
                         Expanded(
                           child: SizedBox(
-                            height: 40, // Fissiamo un'altezza più piccola (prima era circa 55 col padding)
+                            height: 40, 
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 setState(() { selectedActivity = 'walk'; });
@@ -163,7 +162,7 @@ class _TripsbodyState extends State<Tripsbody> {
                                 child: Text('By Walk', style: TextStyle(fontSize: 13)), // Testo leggermente più piccolo
                               ),
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 5), // Togliamo il padding verticale
+                                padding: const EdgeInsets.symmetric(horizontal: 5), 
                                 backgroundColor: selectedActivity == 'walk' 
                                     ? Colors.orange 
                                     : Colors.orange.shade200,
@@ -171,7 +170,7 @@ class _TripsbodyState extends State<Tripsbody> {
                                     ? Colors.white
                                     : Colors.black54,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10), // Raggio leggermente ridotto
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
                             ),
@@ -183,7 +182,7 @@ class _TripsbodyState extends State<Tripsbody> {
                         // Tasto Bike
                         Expanded(
                           child: SizedBox(
-                            height: 40, // Fissiamo la stessa altezza contenuta
+                            height: 40, 
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 setState(() { selectedActivity = 'bike'; });
@@ -194,7 +193,7 @@ class _TripsbodyState extends State<Tripsbody> {
                                 child: Text('By Bike', style: TextStyle(fontSize: 13)),
                               ),
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 5), // Togliamo il padding verticale
+                                padding: const EdgeInsets.symmetric(horizontal: 5), 
                                 backgroundColor: selectedActivity == 'bike' 
                                     ? const Color(0xFF4A7C59) 
                                     : const Color(0xFF4A7C59).withOpacity(0.4),
@@ -393,30 +392,30 @@ class _TripsbodyState extends State<Tripsbody> {
               ),
             ),
             
-            // --- PARTE DESTRA: Icona Attività (Grande) + Cestino (Piccolo e Grigio) ---
+            // --- PARTE DESTRA: Icona Attività  + Cestino  ---
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 1. Icona Attività (Walk/Bike) - PIÙ GRANDE E IN RISALTO
+                // 1. Icona Attività (Walk/Bike) 
                 Container(
-                  width: 45,  // Dimensione aumentata
-                  height: 45, // Dimensione aumentata
+                  width: 45, 
+                  height: 45, 
                   decoration: BoxDecoration(
                     color: trip.activity == 'bike' 
                         ? const Color(0xFF4A7C59).withOpacity(0.15) 
                         : Colors.orange.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10), // Bordi più morbidi
+                    borderRadius: BorderRadius.circular(10), 
                   ),
                   child: Icon(
                     activityIcon, 
-                    size: 24, // Icona più grande
+                    size: 24,
                     color: trip.activity == 'bike' ? const Color(0xFF4A7C59) : Colors.orange,
                   ),
                 ),
                 
                 const SizedBox(width: 5), // Spazio tra i due elementi
                 
-                // 2. Bottone Cestino - PIÙ PICCOLO E DISCRETO
+                // 2. Bottone Cestino 
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
