@@ -16,8 +16,7 @@ class GpxService{
     try {
       // 1. Usiamo FileType.any per evitare il crash su Chrome/PC
       FilePickerResult? result = await FilePicker.platform.pickFiles( // invoca il selettore di file nativo
-            type: FileType.custom, // <--- Cambiato da FileType.any
-            allowedExtensions: ['gpx'],
+            type: FileType.any, 
             withData: true,
             allowMultiple: false,
           );
@@ -26,12 +25,7 @@ class GpxService{
       if (result != null) { 
         String fileName = result.files.single.name;
         
-        // --- CONTROLLO MANUALE DELL'ESTENSIONE ---
-        if (!fileName.toLowerCase().endsWith('.gpx')) {
-          print("Errore: Il file selezionato non è un GPX!");
-          return null; // Ritorna null, così la UI mostrerà lo SnackBar di errore
-        }
-        // -----------------------------------------------
+        
 
         try {
           // 2. Leggo il contenuto

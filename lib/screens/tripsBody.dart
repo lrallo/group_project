@@ -75,7 +75,7 @@ class _TripsbodyState extends State<Tripsbody> {
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Error uploading the trip. Please try again!'),
+                                    content: Text('Error uploading the trip. Please Upload only .gpx files!'),
                                     backgroundColor: Colors.redAccent,
                                   ),);
                               }
