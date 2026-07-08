@@ -117,7 +117,6 @@ class _HomeScreenState extends State<HomePage> {
                 _loadNickname(); 
               },
             ),
-
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Logout'),

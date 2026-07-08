@@ -12,7 +12,6 @@ class Tripsbody extends StatefulWidget { // StatefulWidget perché dobbiamo gest
   @override
   State<Tripsbody> createState() => _TripsbodyState();
 }
-
 class _TripsbodyState extends State<Tripsbody> {
   String? selectedActivity; //inizializzato come Null
 
